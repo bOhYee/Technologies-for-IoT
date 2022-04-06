@@ -1,2 +1,5 @@
-*.pdf
-!Requisiti.pdf
+#Ignora tutti i .PDF
+**/*.pdf
+
+# L'unico permesso è quello dei requisiti
+!**/Requisiti.pdf
