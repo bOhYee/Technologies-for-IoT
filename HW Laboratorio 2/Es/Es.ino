@@ -10,17 +10,17 @@ const float R0 = 100000;
 // Motore
 #define MIN_SP_C 25       // Temperatura minima a cui azionare la ventola
 #define MAX_SP_C 30       // Temperatura massima a cui attribuire velocità massima della ventola
-#define MIN_SP_C_pp 22
-#define MAX_SP_C_pp 27
+#define MIN_SP_C_pp 22   // Temperatura minima a cui azionare la ventola in presenza di persone
+#define MAX_SP_C_pp 27   // Temperatura massima a cui attribuire velocità massima della ventola in presenza di persone
 const int FAN_PIN = 13;   // Pin del motorino
-int current_speed = 0;    // Vlocità della ventola
+int current_speed = 0;    // Velocità della ventola
 
 // LED
-#define MIN_SP_R 15
-#define MAX_SP_R 20
-#define MIN_SP_R_pp 18
-#define MAX_SP_R_pp 23
-const int LED_RED=12;
+#define MIN_SP_R 15    //  Temperatura minima a cui attribuire luminosità massima del LED
+#define MAX_SP_R 20    // Temperatura massima a cui azionare il LED
+#define MIN_SP_R_pp 18 // Temperatura minima a cui attribuire luminosità massima del LED in presenza di persone
+#define MAX_SP_R_pp 23 // Temperatura massima a cui azionare il LED in presenza di persone
+const int LED_RED=12;  //pin del LED
 int red_state = 0;
 
 // PIR
@@ -129,7 +129,7 @@ void warmResistor(int temp, int minR, int maxR){
   if(temp < minR)
     red_state = 255;
   else if(temp <= maxR)
-     red_state = 51 * (maxR - (int)temp);
+     red_state = 51 * (maxR - temp);
   else
      red_state = 0;
 
