@@ -276,23 +276,5 @@ void loop() {
   warmResistor(temp, minR, maxR);
   printLCD(temp, people, ac, ht, minC, maxC, minR, maxR);
 
-  Serial.print("T:");
-  Serial.print(temp);
-  Serial.print(" Pres:");
-  Serial.print(people);
-  Serial.print("AC:");
-  Serial.print(ac);
-  Serial.print(" HT:");
-  Serial.print(ht);
-
-  Serial.print("AC m:");
-  Serial.print(minC);
-  Serial.print(" M:");
-  Serial.print(maxC);
-  Serial.print("HT m:");
-  Serial.print(minR);
-  Serial.print(" M:");
-  Serial.println(maxR);
-
   delay(5*1e03);
 }
