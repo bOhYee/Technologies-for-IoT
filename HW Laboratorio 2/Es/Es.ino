@@ -183,15 +183,18 @@ void checkPresenceClap(){
   }
 }
 
-int getValue(){
+int getValue(){ 
   char c;
   int value;
   String str;
 
-  Serial.flush();
-  while(Serial.available()==0);
-  str = Serial.readString();
+  while(Serial.available()>0){
+    c = Serial.read();
+    str += c;
+    delay(2);}
+  
   value=str.toInt();
+  delay(5*1e03);  
   
   return value;
 }
@@ -249,8 +252,9 @@ void loop() {
 
     //imposto i 4 set-point
   Serial.println("Aggiornare i 4 set-point? y/n");
-  while(Serial.available()==0){}
-  risp = Serial.read();
+  while(Serial.available()>0){
+    risp = Serial.read();}
+  delay(5*1e03);  
   Serial.print("Hai scelto ");
   Serial.println(risp);
 
