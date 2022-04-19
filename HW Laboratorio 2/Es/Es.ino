@@ -3,24 +3,24 @@
 #include <LiquidCrystal_PCF8574.h>
 LiquidCrystal_PCF8574 lcd(0x27);
 
-const int TEMP_PIN = A1;  // Pin del sensore di temperatura
+const int TEMP_PIN = A1;       // Pin del sensore di temperatura
 const float B = 4275;
 const float R0 = 100000;
 
 // Motore
-#define MIN_SP_C 25       // Temperatura minima a cui azionare la ventola
-#define MAX_SP_C 30       // Temperatura massima a cui attribuire velocità massima della ventola
-#define MIN_SP_C_pp 22   // Temperatura minima a cui azionare la ventola in presenza di persone
-#define MAX_SP_C_pp 27   // Temperatura massima a cui attribuire velocità massima della ventola in presenza di persone
-const int FAN_PIN = 13;   // Pin del motorino
-int current_speed = 0;    // Velocità della ventola
+#define MIN_SP_C 25            // Temperatura minima a cui azionare la ventola
+#define MAX_SP_C 30            // Temperatura massima a cui attribuire velocità massima della ventola
+#define MIN_SP_C_pp 22         // Temperatura minima a cui azionare la ventola in presenza di persone
+#define MAX_SP_C_pp 27         // Temperatura massima a cui attribuire velocità massima della ventola in presenza di persone
+const int FAN_PIN = 13;        // Pin del motorino
+int current_speed = 0;         // Velocità della ventola
 
 // LED
-#define MIN_SP_R 15    //  Temperatura minima a cui attribuire luminosità massima del LED
-#define MAX_SP_R 20    // Temperatura massima a cui azionare il LED
-#define MIN_SP_R_pp 18 // Temperatura minima a cui attribuire luminosità massima del LED in presenza di persone
-#define MAX_SP_R_pp 23 // Temperatura massima a cui azionare il LED in presenza di persone
-const int LED_RED=12;  //pin del LED
+#define MIN_SP_R 15            //  Temperatura minima a cui attribuire luminosità massima del LED
+#define MAX_SP_R 20            // Temperatura massima a cui azionare il LED
+#define MIN_SP_R_pp 18         // Temperatura minima a cui attribuire luminosità massima del LED in presenza di persone
+#define MAX_SP_R_pp 23         // Temperatura massima a cui azionare il LED in presenza di persone
+const int LED_RED=12;          // Pin del LED
 int red_state = 0;
 
 // PIR
@@ -213,6 +213,7 @@ void loop() {
     risp = Serial.read();
     Serial.print("Hai scelto ");
     Serial.println(risp);
+    
     if(risp == 'y'){
       Serial.print("minC: ");
       minC=Serial.read();
