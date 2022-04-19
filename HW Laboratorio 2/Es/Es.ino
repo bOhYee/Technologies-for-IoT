@@ -177,9 +177,9 @@ void checkPresenceClap(){
     if((currentClap - lastClap < MAX_CLAP_INTERVAL && currentClap - lastClap > MIN_CLAP_INTERVAL && currentClap - lastSwitch > MAX_CLAP_INTERVAL)){
         green_state = !green_state;
         digitalWrite(GREEN_LED,green_state);
-        lastSwitch = currentClap; 
+        lastSwitch = currentClap;
     }
-    lastClap = currentClap; 
+    lastClap = currentClap;
   }
 }
 
@@ -187,16 +187,17 @@ int getValue(){
   char c;
   String str;
   int value;
-  while(Serial.available()==0){}
-      while( c!='\\'){ //finchè non inserisco il carattere di escape
-        c = Serial.read();
-        str += c;
-        delay(2);
-      }
+  while(Serial.available()==0);
+
+  while(c != '\\'){ //finchè non inserisco il carattere di escape
+    c = Serial.read();
+    str += c;
+  }
+
   value=str.toInt();
   Serial.println(value);
-  
-  return value;   
+
+  return value;
 }
 
 void setup() {
@@ -233,7 +234,7 @@ void setup() {
  Serial.println("Monitor LCD collegato...");
  Serial.println("Inizio...");
 
- // Punto 9 
+ // Punto 9
  pinMode(GREEN_LED,OUTPUT);
  analogWrite(GREEN_LED,green_state);
  attachInterrupt(digitalPinToInterrupt(MICRO_SENSOR), checkPresenceClap, CHANGE);
@@ -250,17 +251,18 @@ void loop() {
   ac = current_speed * 100 / 255;
   ht = red_state * 100 / 255;
 
-    //imposto i 4 set-point 
+    //imposto i 4 set-point
   Serial.println("Aggiornare i 4 set-point? y/n");
-  while(Serial.available()==0){}    
+  while(Serial.available()==0){}
   risp = Serial.read();
   Serial.print("Hai scelto ");
   Serial.println(risp);
-    
+
   if(risp == 'y'){
+    Serial.flush();
     Serial.print("minC: ");
     minC=getValue();
-    Serial.print("maxC: ");      
+    Serial.print("maxC: ");
     maxC=getValue();
     Serial.print("minR: ");
     minR=getValue();
@@ -279,7 +281,7 @@ void loop() {
       minR = MIN_SP_R;
       maxR = MAX_SP_R;
   }
- 
+
 
   // Gestisco il PIR
   foundPir = checkPresencePir();
