@@ -3,29 +3,31 @@
 #include <LiquidCrystal_PCF8574.h>
 LiquidCrystal_PCF8574 lcd(0x27);
 
-const int TEMP_PIN = A1;       // Pin del sensore di temperatura
+const int TEMP_PIN = A1;  // Pin del sensore di temperatura
 const float B = 4275;
 const float R0 = 100000;
 
 // Motore
-#define MIN_SP_C 25            // Temperatura minima a cui azionare la ventola
-#define MAX_SP_C 30            // Temperatura massima a cui attribuire velocità massima della ventola
-#define MIN_SP_C_pp 22         // Temperatura minima a cui azionare la ventola in presenza di persone
-#define MAX_SP_C_pp 27         // Temperatura massima a cui attribuire velocità massima della ventola in presenza di persone
-const int FAN_PIN = 13;        // Pin del motorino
-int current_speed = 0;         // Velocità della ventola
+#define MIN_SP_C 25       // Temperatura minima a cui azionare la ventola
+#define MAX_SP_C 30       // Temperatura massima a cui attribuire velocità massima della ventola
+#define MIN_SP_C_pp 22    // Temperatura minima a cui azionare la ventola in presenza di persone
+#define MAX_SP_C_pp 27    // Temperatura massima a cui attribuire velocità massima della ventola in presenza di persone
+const int FAN_PIN = 13;   // Pin del motorino
+int current_speed = 0;    // Velocità della ventola
 
 // LED
-#define MIN_SP_R 15            //  Temperatura minima a cui attribuire luminosità massima del LED
-#define MAX_SP_R 20            // Temperatura massima a cui azionare il LED
-#define MIN_SP_R_pp 18         // Temperatura minima a cui attribuire luminosità massima del LED in presenza di persone
-#define MAX_SP_R_pp 23         // Temperatura massima a cui azionare il LED in presenza di persone
-const int LED_RED=12;          // Pin del LED
+#define MIN_SP_R 15    //  Temperatura minima a cui attribuire luminosità massima del LED
+#define MAX_SP_R 20    // Temperatura massima a cui azionare il LED
+#define MIN_SP_R_pp 18 // Temperatura minima a cui attribuire luminosità massima del LED in presenza di persone
+#define MAX_SP_R_pp 23 // Temperatura massima a cui azionare il LED in presenza di persone
+const int RED_LED=12;  // pin del LED rosso
 int red_state = 0;
+const int GREEN_LED=11;// pin del LED verde
+int green_state = 0;
 
 // PIR
 #define TIMEOUT_PIR 5          // Tempo di attesa dopo cui ipotizzare che non ci siano più persone in stanza
-const int PIR_SENSOR= 7;       // Pin del sensore PIR
+const int PIR_SENSOR=7;        // Pin del sensore PIR
 int pirValue = LOW;
 int people = 0;                // Numero di persone rilevate nella stanza
 unsigned long lastPresenceTime = 0;
@@ -34,10 +36,15 @@ unsigned long firstPresenceTime = 0;
 // Microfono
 #define N_SOUND_EVENTS 3                // Numero di eventi necessari per rilevare una presenza (in un certo lasso di tempo) col sensore di rumore
 #define SOUND_INTERVAL  5               // Lasso di tempo in cui verificare la presenza degli N eventi col sensore di rumore (minuti)
-const int MICRO_SENSOR = 6;             // Pin associato al microfono
+const int MICRO_SENSOR = 2;             // Pin associato al microfono
 int events;                             // Eventi rilevati dal microfono
 unsigned long firstEventMicro = 0;
 unsigned long lastEventMicro = 0;
+#define MAX_CLAP_INTERVAL 1000          // Intervallo massimo tra un battito di mani e l'altro (millisecondi)
+#define MIN_CLAP_INTERVAL 300           // Intervallo minimo tra un battito di mani e l'altro (millisecondi)
+volatile long currentClap = 0;
+volatile long lastClap = 0;
+volatile long lastSwitch = 0;
 
 // Calcola la temperatura rilevata dal sensore
 int calculateTemperature(){
@@ -133,7 +140,7 @@ void warmResistor(int temp, int minR, int maxR){
   else
      red_state = 0;
 
-  analogWrite(LED_RED, red_state);
+  analogWrite(RED_LED, red_state);
 }
 
 // Stampa i valori ottenuti su monitor LCD
@@ -162,6 +169,21 @@ void printLCD(int temperature, int peopleFound, int ac, int heater, int acMin, i
 
 }
 
+// Accende/spegne il LED verde in caso di doppio battito di mani
+void checkPresenceClap(){
+  int microValueC;
+  microValueC = digitalRead(MICRO_SENSOR);
+  currentClap = millis();
+  if(microValueC == HIGH){
+    if((currentClap - lastClap < MAX_CLAP_INTERVAL && currentClap - lastClap > MIN_CLAP_INTERVAL && currentClap - lastSwitch > MAX_CLAP_INTERVAL)){
+        green_state = !green_state;
+        digitalWrite(GREEN_LED,green_state);
+        lastSwitch = currentClap; 
+    }
+    lastClap = currentClap; 
+  }
+}
+
 void setup() {
 
   // Inizializzo il monitor seriale
@@ -175,8 +197,8 @@ void setup() {
  Serial.println("Motore collegato...");
 
  // Punto 2
- pinMode(LED_RED,OUTPUT);
- analogWrite(LED_RED,red_state);
+ pinMode(RED_LED,OUTPUT);
+ analogWrite(RED_LED,red_state);
  Serial.println("LED rosso collegato...");
 
  // Punto 3
@@ -188,13 +210,18 @@ void setup() {
  Serial.println("Microfono collegato...");
 
  // Punto 7
-  lcd.begin(16,2);
-  lcd.setBacklight(255);
-  lcd.home();
-  lcd.clear();
-  lcd.print(" ");
-  Serial.println("Monitor LCD collegato...");
-  Serial.println("Inizio...");
+ lcd.begin(16,2);
+ lcd.setBacklight(255);
+ lcd.home();
+ lcd.clear();
+ lcd.print(" ");
+ Serial.println("Monitor LCD collegato...");
+ Serial.println("Inizio...");
+
+ // Punto 9 
+ pinMode(GREEN_LED,OUTPUT);
+ analogWrite(GREEN_LED,green_state);
+ attachInterrupt(digitalPinToInterrupt(MICRO_SENSOR), checkPresenceClap, CHANGE);
 }
 
 void loop() {
@@ -208,12 +235,11 @@ void loop() {
   ht = red_state * 100 / 255;
 
   //imposto i 4 set-point
-  if(Serial.available()){
-    Serial.println("Aggiornare i 4 set-point? y/n");
+  Serial.println("Aggiornare i 4 set-point? y/n");
+  if(Serial.available()>0){
     risp = Serial.read();
     Serial.print("Hai scelto ");
     Serial.println(risp);
-    
     if(risp == 'y'){
       Serial.print("minC: ");
       minC=Serial.read();
@@ -224,26 +250,25 @@ void loop() {
       Serial.print("maxR: ");
       maxR=Serial.read();
       }
-  }
-  else if(people){
-    minC = MIN_SP_C_pp;
-    maxC = MAX_SP_C_pp;
-    minR = MIN_SP_R_pp;
-    maxR = MAX_SP_R_pp;
-  }
-  else{
-    minC = MIN_SP_C;
-    maxC = MAX_SP_C;
-    minR = MIN_SP_R;
-    maxR = MAX_SP_R;
-  }
+    else if(people){
+      minC = MIN_SP_C_pp;
+      maxC = MAX_SP_C_pp;
+      minR = MIN_SP_R_pp;
+      maxR = MAX_SP_R_pp;
+    }
+    else{
+      minC = MIN_SP_C;
+      maxC = MAX_SP_C;
+      minR = MIN_SP_R;
+      maxR = MAX_SP_R;
+  }}
 
   // Gestisco il PIR
   foundPir = checkPresencePir();
   // Gestisco il microfono
-  foundMicro = checkPresenceMicrophone();
+  //foundMicro = checkPresenceMicrophone(); commentato per il punto 9
   // Se ho trovato una presenza o con PIR o con microfono aumento il numero di persone percepite
-  if(foundPir || foundMicro)
+  if(foundPir)// || foundMicro commentato per il punto 9
     people++;
 
   activateFan(temp, minC, maxC);
