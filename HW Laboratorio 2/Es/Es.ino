@@ -252,7 +252,7 @@ void loop() {
 
     //imposto i 4 set-point
   Serial.println("Aggiornare i 4 set-point? y/n");
-  while(Serial.available()>0){
+  if(Serial.available()>0){
     risp = Serial.read();}
   delay(5*1e03);  
   Serial.print("Hai scelto ");
