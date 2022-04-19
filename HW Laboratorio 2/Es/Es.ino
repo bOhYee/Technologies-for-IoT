@@ -240,7 +240,8 @@ void setup() {
 }
 
 void loop() {
-  int temp, minC, maxC, minR, maxR, risp;
+  int temp, minC, maxC, minR, maxR;
+  char risp;
   float ac, ht;
   bool foundPir, foundMicro;
   unsigned long timePassedMinutes;
