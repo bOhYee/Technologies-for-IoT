@@ -1,5 +1,4 @@
 #include <math.h>
-#include <TimerOne.h>
 #include <LiquidCrystal_PCF8574.h>
 LiquidCrystal_PCF8574 lcd(0x27);
 
