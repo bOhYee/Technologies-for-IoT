@@ -185,18 +185,14 @@ void checkPresenceClap(){
 
 int getValue(){
   char c;
-  String str;
   int value;
+  String str;
+
+  Serial.flush();
   while(Serial.available()==0);
-
-  while(c != '\\'){ //finchè non inserisco il carattere di escape
-    c = Serial.read();
-    str += c;
-  }
-
+  str = Serial.readString();
   value=str.toInt();
-  Serial.println(value);
-
+  
   return value;
 }
 
@@ -259,7 +255,6 @@ void loop() {
   Serial.println(risp);
 
   if(risp == 'y'){
-    Serial.flush();
     Serial.print("minC: ");
     minC=getValue();
     Serial.print("maxC: ");
