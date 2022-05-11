@@ -2,8 +2,6 @@ import cherrypy
 import json
 from Conversion import *
 std_params = ["value", "originalUnit", "targetUnit"]
-std_unit = ["C", "F", "K"]
-
 
 def check_params(std, target):
     for param in target:
@@ -20,31 +18,28 @@ def check_values(params, std, target):
         return -1
 
 
-class TempConverter(object):
+class TempConverterService(object):
 
     exposed=True
 
     def GET(self, **args):
         oldValue = 0
-        newValue = 0
         dictToExp = {}
 
         if len(args) == 3:
             if check_params(std_params, args) == -1:
                 raise cherrypy.HTTPError(400, "Parameters not valid")
 
-            if check_values(std_params, std_unit, args) == -1:
-                raise cherrypy.HTTPError(400, "Values not valid")
-
             oldValue = int(args.get(std_params[0]))
             conv = Conversion(oldValue, args.get(std_params[1]), args.get(std_params[2]))
-            newValue = conv.getTarget()
+            if conv.checkValues() == -1:
+                raise cherrypy.HTTPError(400, "Values not valid")
 
-            dictToExp["origValue"] = oldValue
-            dictToExp["origUnit"] = args.get(std_params[1])
-            dictToExp["targetValue"] = newValue
-            dictToExp["targetUnit"] = args.get(std_params[2])
-            print(dictToExp)
+            conv.convert()
+            dictToExp["origValue"] = conv.getValue()
+            dictToExp["origUnit"] = conv.getUnit()
+            dictToExp["targetValue"] = conv.getTarget()
+            dictToExp["targetUnit"] = conv.get_tUnit()
             return json.dumps(dictToExp)
         else:
             raise cherrypy.HTTPError(400, "Missing values")
@@ -60,7 +55,7 @@ def main():
 
     cherrypy.config.update({'server.socket_host': '127.0.0.1'})
     cherrypy.config.update({'server.socket_port': 5605})
-    cherrypy.tree.mount (TempConverter(), '/converter', conf)
+    cherrypy.tree.mount (TempConverterService(), '/converter', conf)
     cherrypy.engine.start()
     cherrypy.engine.block()
 

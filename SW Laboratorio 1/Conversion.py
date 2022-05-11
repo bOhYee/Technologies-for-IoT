@@ -1,28 +1,37 @@
+std_unit = ["C", "F", "K"]
+
 class Conversion:
 
     def __init__(self, value, unit, tUnit):
-
         self.value = value
         self.unit = unit
         self.tUnit = tUnit
+        self.target = 0
 
+    def convert(self):
         # Celsius <->  Fahrenheit
-        if unit == 'C' and tUnit == 'F':
-            self.target = value * (9 / 5) + 32
-        if unit == 'F' and tUnit == 'C':
-            self.target = (5 / 9) * (value - 32)
+        if self.unit == 'C' and self.tUnit == 'F':
+            self.target = self.value * (9 / 5) + 32
+        if self.unit == 'F' and self.tUnit == 'C':
+            self.target = (5 / 9) * (self.value - 32)
 
         # Celsius <->  Kelvin
-        if unit == 'C' and tUnit == 'K':
-            self.target = value + 273
-        if unit == 'K' and tUnit == 'C':
-            self.target = value - 273
+        if self.unit == 'C' and self.tUnit == 'K':
+            self.target = self.value + 273
+        if self.unit == 'K' and self.tUnit == 'C':
+            self.target = self.value - 273
 
         # Kelvin <->  Fahrenheit
-        if unit == 'F' and tUnit == 'K':
-            self.target = (5 / 9) * (value - 32) + 273
-        if unit == 'K' and tUnit == 'F':
-            self.target = (value - 273) * (9 / 5) + 32
+        if self.unit == 'F' and self.tUnit == 'K':
+            self.target = (5 / 9) * (self.value - 32) + 273
+        if self.unit == 'K' and self.tUnit == 'F':
+            self.target = (self.value - 273) * (9 / 5) + 32
+
+    def checkValues(self):
+        if self.unit not in std_unit or self.tUnit not in std_unit:
+            return -1
+        else:
+            return 0
 
     def getValue(self):
         return self.value
