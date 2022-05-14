@@ -18,7 +18,7 @@ class ProducerWebService(object):
 		if 'targetUnit' not in jsonDict.keys() or 'originalUnit' not in jsonDict.keys() or 'values' not in jsonDict.keys():
 			raise cherrypy.HTTPError(404, "Bad Request: URI is not correctly formatted")
 		if jsonDict['targetUnit'] not in ['C','K','F'] or jsonDict['originalUnit'] not in ['C','K','F']:
-			raise cherrypy.HTTPError(404, "Bad Request: this service only supports Celsius, Fahrenhite and Kelvin measure units.")
+			raise cherrypy.HTTPError(404, "Bad Request: this service only supports Celsius, Fahrenhite and Kelvin as units of measurement.")
 		jsonDict['convertedValues'] = []
 		for i in range(len(jsonDict['values'])):
 			converted = Conversion(float(jsonDict['values'][i]),jsonDict['originalUnit'],jsonDict['targetUnit'])
