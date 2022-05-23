@@ -2,10 +2,10 @@
 #include<Process.h>
 #include <math.h>
 
-const int TEMP_PIN = A1
+const int TEMP_PIN = A1;
 const float B = 4275;
 const float R0 = 100000;
-cont int WAIT_TIME = 2000   
+const int WAIT_TIME = 2000;   
 Process proc;
 
 float calculateTemperature(int v_read){
@@ -45,5 +45,5 @@ void loop(){
         Serial.print(ret);
     }
 
-    delay(wait_time);
+    delay(WAIT_TIME);
 }
