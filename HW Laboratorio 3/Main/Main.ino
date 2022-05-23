@@ -2,6 +2,7 @@
 #include<Process.h>
 #include <math.h>
 
+// Temperature sensor variables
 const int TEMP_PIN = A1;
 const float B = 4275;
 const float R0 = 100000;
