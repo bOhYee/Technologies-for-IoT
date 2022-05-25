@@ -3,3 +3,6 @@
 
 # L'unico permesso è quello dei requisiti
 !**/Requisiti.pdf
+
+#Ignora cartelle nascoste e cartelle con file di configurazione
+**/[._]*
