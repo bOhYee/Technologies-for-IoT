@@ -12,7 +12,7 @@ const float B = 4275;
 const float R0 = 100000;
 
 // Wait before the next loop
-const int WAIT_TIME = 2000;
+const int WAIT_TIME = 200;
 
 // BridgeServer instance
 BridgeServer server;
@@ -82,6 +82,8 @@ void processRequest(BridgeClient client){
 
     command = client.readStringUntil('/');
     command.trim();
+    Serial.print("Command received: ");
+    Serial.println(command);
 
     if(command == "led"){
         led_val = client.parseInt();
@@ -123,7 +125,7 @@ void setup(){
 void loop(){
 
     BridgeClient client;
-
+    
     client = server.accept();
     if(client != 0){
         processRequest(client);

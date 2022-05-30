@@ -1,10 +1,15 @@
 import cherrypy
 import json
+import time
 
+dev_list = []
+ser_list = []
+user_list = []
 
 class ResourceCatalogServer:
 
     def __init__(self):
+        self.manageDevicesThread = threading.Thread(target=)
         self.subscription = {
             "REST": {
                 "device"  : "http://192.168.0.10:8080/devices/subscription",
@@ -30,7 +35,27 @@ class ResourceCatalogServer:
         cherrypy.config.update({"server.socket_port": 12012})
         cherrypy.tree.mount(ResourceCatalog(self.subscription), "/", self.conf)
         cherrypy.engine.start()
-        cherrypy.engine.block()
+
+        while True:
+            refresh(dev_list)
+            refresh(ser_list)
+            time.sleep(45)
+
+    def refresh(self, listToRefresh):
+        counter = 0
+        toDelete = []
+        curr_time = time.time()
+
+        for obj in listToRefresh:
+            diff_time = curr_time - obj["timestamp"]
+            if diff_time > 120 :
+                toDelete.append(counter)
+
+            counter += 1
+
+        for i in toDelete:
+            del listToRefresh[i]
+
 
 class ResourceCatalog:
 
