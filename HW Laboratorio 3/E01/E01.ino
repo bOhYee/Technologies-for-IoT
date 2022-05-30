@@ -32,8 +32,11 @@ String createBody(int status, float retVal, char type){
 
     String body;
 
-    body = "{\n" +  "\"bn\" : \"Yun\",\n" + "\"e\" : [\n{"
-    body += "\"n\": "
+    body.concat("{\n");
+    body.concat("\"bn\" : \"Yun\",\n");
+    body.concat("\"e\" :");
+    body.concat("[\n{");
+    /*body += "\"n\": ";
 
     if(type == 'L'){
         body += "\"led\",\n"
@@ -53,7 +56,7 @@ String createBody(int status, float retVal, char type){
         body += "\"Cel\"\n";
     }
 
-    body += "}\n]\n}";
+    body += "}\n]\n}";*/
 
     return body;
 }
@@ -64,7 +67,7 @@ void sendFeedback(BridgeClient client, int status, float retVal, char type){
 
     client.println("Status: " + String(status));
     if(status == 200){
-        body = createBody();
+        body = createBody(status, retVal, type);
         client.println(F("Content-type: application/json; charset=utf-8"));
         client.println();
         client.println(body);
@@ -93,7 +96,7 @@ void processRequest(BridgeClient client){
             sendFeedback(client, 400, -1, 'L');
         }
     }
-    else if(commad == "temperature"){
+    else if(command == "temperature"){
         v_read = analogRead(TEMP_PIN);
         temp = calculateTemperature(v_read);
         sendFeedback(client, 200, temp, 'T');
@@ -124,7 +127,7 @@ void loop(){
     client = server.accept();
     if(client != 0){
         processRequest(client);
-        client.close();
+        client.stop();
     }
 
     delay(WAIT_TIME);
