@@ -18,8 +18,8 @@ class Client:
             req.raise_for_status()
 
         # Verify that the response contains a JSON as payload
-        if req.headers["Content-type"] != "application/json":
-            raise ValueError("Error: response received does not include a JSON.")
+        #if req.headers["Content-type"] != "application/json":
+         #   raise ValueError("Error: response received does not include a JSON.")
 
         self.subscription = req.json()
 
@@ -48,7 +48,7 @@ class Client:
         # If the request is invalid, raise an Exception
         header = {}
         header["Content-Type"] = "application/json"
-        url = self.subscription["REST"]["devices"]
+        url = self.subscription["REST"]["device"]
 
         for dev in self.devices_maintained:
             req = requests.put(url, headers=header, data=json.dumps(dev))

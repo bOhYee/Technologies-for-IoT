@@ -97,11 +97,11 @@ class ResourceCatalog:
         rawBody = json.loads(cherrypy.request.body.read())
         if checkBody(uri[0], rawBody):
             if uri[0] == 'devices':
-                devices.append(json.loads(str(rawBody)))
+                devices.append(rawBody)
             elif uri[0] == 'users':
-                users.append(json.loads(str(rawBody)))
+                users.append(rawBody)
             elif uri[0] == 'services':
-                services.append(json.loads(str(rawBody)))
+                services.append(rawBody)
         else:
             raise cherrypy.HTTPError(400, "Bad Request: invalid body")
 
@@ -117,7 +117,7 @@ class ResourceCatalog:
         if contentType != "application/json":
             raise cherrypy.HTTPError(400, "Bad Request: wrong Content-Type")
 
-        rawBody = dict(cherrypy.request.body.read())
+        rawBody = json.loads(cherrypy.request.body.read())
         if checkBody(uri[0], rawBody):
             found = False
             id = rawBody["uuid"]
@@ -130,7 +130,7 @@ class ResourceCatalog:
                         found = True
 
                 if found:
-                    devices.append(json.loads(str(rawBody)))
+                    devices.append(rawBody)
 
             if uri[0] == 'users':
 
@@ -139,7 +139,7 @@ class ResourceCatalog:
                         found = True
 
                 if not found:
-                    users.append(json.loads(str(rawBody)))
+                    users.append(rawBody)
 
             if uri[0] == 'services':
 
@@ -150,7 +150,7 @@ class ResourceCatalog:
                         found = True
 
                 if not found:
-                    services.append(json.loads(str(rawBody)))
+                    services.append(rawBody)
 
         else:
             raise cherrypy.HTTPError(400, "Bad Request: invalid body")
@@ -219,7 +219,7 @@ def main():
     conf = {
         '/': {
             'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
-            'tool.session.on': True
+            'tools.sessions.on': True,
         }
     }
 
