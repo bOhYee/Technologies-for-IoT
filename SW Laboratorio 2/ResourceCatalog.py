@@ -1,6 +1,7 @@
 import cherrypy
 import json
 import time
+import paho.mqtt.client as PahoMQTT
 
 devices = []
 users = []
@@ -53,17 +54,7 @@ class ResourceCatalog:
                 "device": {
                     "hostname": "iot.eclipse.org",
                     "port": "1883",
-                    "topic": "tiot/14/catalog/devices/subscription"
-                },
-                "service": {
-                    "hostname": "iot.eclipse.org",
-                    "port": "1883",
-                    "topic": "tiot/14/catalog/services/subscription"
-                },
-                "user": {
-                    "hostname": "iot.eclipse.org",
-                    "port": "1883",
-                    "topic": "tiot/14/catalog/users/subscription"
+                    "topic": "tiot/group14/catalog/devices/subscription"
                 }
 
             }
@@ -117,6 +108,8 @@ class ResourceCatalog:
                     users.append(json.loads(str(rawBody)))
                 elif uri[0] == 'services':
                     services.append(json.loads(str(rawBody)))
+            else:
+                raise cherrypy.HTTPError(400, "Bad Request: invalid body")
 
     #update resources
     def PUT(self,*uri, **params):
@@ -131,25 +124,84 @@ class ResourceCatalog:
                 if uri[0] == 'devices':
                     for d in devices:
                         if d["uuid"] == id:
-                            d = json.loads(str(rawBody))
+                            d["t"] = rawBody["t"] #update timestamp
                             found = True
                     if found is False:
                         devices.append(json.loads(str(rawBody)))
                 if uri[0] == 'users':
                     for u in users:
                         if u["uuid"] == id:
-                            u = json.loads(str(rawBody))
                             found = True
                     if found is False:
                         users.append(json.loads(str(rawBody)))
                 if uri[0] == 'services':
                     for s in services:
                         if s["uuid"] == id:
-                            s = json.loads(str(rawBody))
+                            s["t"] = rawBody["t"] #update timestamp
                             found = True
                     if found is False:
                         services.append(json.loads(str(rawBody)))
+            else:
+                raise cherrypy.HTTPError(400, "Bad Request: invalid body")
 
+
+
+class ResourceCatalogMQTT():
+
+    def __init__(self, clientID):
+        self._topic = ""
+        self._isSubscriber = False
+
+        # create an instance of paho.mqtt.client
+        self._paho_mqtt = PahoMQTT.Client(clientID, False)
+
+        # register the callback
+        self._paho_mqtt.on_connect = self.myOnConnect
+        self._paho_mqtt.on_message = self.myOnMessageReceived
+
+        self.messageBroker = 'test.mosquitto.org'
+
+    def start(self):
+        # manage connection to broker
+        self._paho_mqtt.connect(self.messageBroker, 1883)
+        self._paho_mqtt.loop_start()
+
+    def stop(self):
+        if self._isSubscriber:
+            # remember to unsuscribe if it is working also as subscriber
+            self._paho_mqtt.unsubscribe(self._topic)
+        self._paho_mqtt.loop_stop()
+        self._paho_mqtt.disconnect()
+
+    def myPublish(self, topic, message): #pub
+        # publish a message with a certain topic
+        self._paho_mqtt.publish(topic, message, 2)
+
+    def myOnConnect(self, paho_mqtt, userdata, flags, rc):
+        print("Connected to %s with result code: %d" % (self.messageBroker, rc))
+
+    def mySubscribe(self, topic):
+        print("Subscribing to %s" % topic)
+        # subscribe for a topic
+        self._paho_mqtt.subscribe(topic, 2)
+        self._isSubscriber = True
+        self._topic = topic
+
+    def myOnMessageReceived(self, paho_mqtt, userdata, message): # add or update device info
+        # A new message is received
+        topic = message.topic.split('/')
+        msg = dict(message.payload.decode('utf-8'))
+        found = False
+        if checkBody("devices", msg) is True:
+            for d in devices:
+                if d["uuid"] == msg["uuid"]:
+                    d["t"] = msg["t"]  # update timestamp
+                    found = True
+            if found is False:
+                devices.append(json.loads(str(msg)))
+            self.myPublish(str(topic) + "/" + str(msg["uuid"]),"Device" + (str(msg["uuid"])) + " data correctly added or updated")
+        else:
+            raise Exception("The message is not well structured.")
 
 
 
@@ -165,6 +217,12 @@ if __name__ == "__main__":
     cherrypy.config.update({'server.socket_host': '127.0.0.1'})
     cherrypy.config.update({'server.socket_port': 8080})
     cherrypy.engine.start()
+
+    dev = ResourceCatalogMQTT("Yun_Group14")
+    dev.start()
+    dev.mySubscribe("tiot/group14/catalog/devices/subscription")
+    # (CATALOG AS SUBSCRIBER) when a device publishes its info on this topic the catalog will retrive them
+    # (CATALOG AS PUBLISHER) for every device saved via MQTT a new specific topic will be generated
 
     while True:
         refresh(devices)
