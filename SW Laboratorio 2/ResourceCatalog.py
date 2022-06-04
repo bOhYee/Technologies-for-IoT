@@ -1,3 +1,4 @@
+from GlobalConst import *
 import cherrypy
 import json
 import time
@@ -44,21 +45,7 @@ class ResourceCatalog:
     exposed = True
 
     def __init__(self):
-        self.subscription = {
-            "REST": {
-                "device": "http://192.168.0.10:8080/devices/subscription",
-                "service": "http://192.168.0.10:8080/services/subscription",
-                "user": "http://192.168.0.10:8080/users/subscription"
-            },
-            "MQTT": {
-                "device": {
-                    "hostname": "iot.eclipse.org",
-                    "port": "1883",
-                    "topic": "tiot/group14/catalog/devices/subscription"
-                }
-
-            }
-        }
+        self.subscription = SUBSCRIPTION
 
     def GET(self, *uri, **params):
         if len(uri) == 0:
@@ -91,58 +78,82 @@ class ResourceCatalog:
                         if s["uuid"] == uri[1]:
                             return json.dumps(s)
                 raise cherrypy.HTTPError(404, "Invalid uuid")
-            else:
-                raise cherrypy.HTTPError(404, "Wrong number of parameters.")
 
-    #create resources
+        else:
+            raise cherrypy.HTTPError(404, "Wrong number of parameters.")
+
+    # Create resources
     def POST(self, *uri, **params):
-        if uri[-1] == 'subscription':
-            contentType = cherrypy.request.headers['Content-Type']
-            if contentType != "application/json":
-                raise cherrypy.HTTPError(400, "Bad Request: wrong Content-Type")
-            rawBody = dict(cherrypy.request.body.read())
-            if checkBody(uri[0], rawBody) is True:
-                if uri[0] == 'devices':
-                    devices.append(json.loads(str(rawBody)))
-                elif uri[0] == 'users':
-                    users.append(json.loads(str(rawBody)))
-                elif uri[0] == 'services':
-                    services.append(json.loads(str(rawBody)))
-            else:
-                raise cherrypy.HTTPError(400, "Bad Request: invalid body")
+        if len(uri) != 2:
+            raise cherrypy.HTTPError(400, "Bad Request: wrong URI for POST.")
 
-    #update resources
-    def PUT(self,*uri, **params):
-        if uri[-1] == 'subscription':
-            contentType = cherrypy.request.headers['Content-Type']
-            if contentType != "application/json":
-                raise cherrypy.HTTPError(400, "Bad Request: wrong Content-Type")
-            rawBody = dict(cherrypy.request.body.read())
+        if uri[-1] != "subscription":
+            raise cherrypy.HTTPError(400, "Bad Request: malformed syntax.")
+
+        contentType = cherrypy.request.headers['Content-Type']
+        if contentType != "application/json":
+            raise cherrypy.HTTPError(400, "Bad Request: wrong Content-Type")
+
+        rawBody = json.loads(cherrypy.request.body.read())
+        if checkBody(uri[0], rawBody):
+            if uri[0] == 'devices':
+                devices.append(json.loads(str(rawBody)))
+            elif uri[0] == 'users':
+                users.append(json.loads(str(rawBody)))
+            elif uri[0] == 'services':
+                services.append(json.loads(str(rawBody)))
+        else:
+            raise cherrypy.HTTPError(400, "Bad Request: invalid body")
+
+    # Update resources
+    def PUT(self, *uri, **params):
+        if len(uri) != 2:
+            raise cherrypy.HTTPError(400, "Bad Request: wrong URI for POST.")
+
+        if uri[-1] != "subscription":
+            raise cherrypy.HTTPError(400, "Bad Request: malformed syntax.")
+
+        contentType = cherrypy.request.headers['Content-Type']
+        if contentType != "application/json":
+            raise cherrypy.HTTPError(400, "Bad Request: wrong Content-Type")
+
+        rawBody = dict(cherrypy.request.body.read())
+        if checkBody(uri[0], rawBody):
+            found = False
             id = rawBody["uuid"]
-            if checkBody(uri[0], rawBody) is True:
-                found = False
-                if uri[0] == 'devices':
-                    for d in devices:
-                        if d["uuid"] == id:
-                            d["t"] = rawBody["t"] #update timestamp
-                            found = True
-                    if found is False:
-                        devices.append(json.loads(str(rawBody)))
-                if uri[0] == 'users':
-                    for u in users:
-                        if u["uuid"] == id:
-                            found = True
-                    if found is False:
-                        users.append(json.loads(str(rawBody)))
-                if uri[0] == 'services':
-                    for s in services:
-                        if s["uuid"] == id:
-                            s["t"] = rawBody["t"] #update timestamp
-                            found = True
-                    if found is False:
-                        services.append(json.loads(str(rawBody)))
-            else:
-                raise cherrypy.HTTPError(400, "Bad Request: invalid body")
+            if uri[0] == 'devices':
+
+                for d in devices:
+                    if d["uuid"] == id:
+                        # Update timestamp
+                        d["t"] = rawBody["t"]
+                        found = True
+
+                if found:
+                    devices.append(json.loads(str(rawBody)))
+
+            if uri[0] == 'users':
+
+                for u in users:
+                    if u["uuid"] == id:
+                        found = True
+
+                if not found:
+                    users.append(json.loads(str(rawBody)))
+
+            if uri[0] == 'services':
+
+                for s in services:
+                    if s["uuid"] == id:
+                        # Update timestamp
+                        s["t"] = rawBody["t"]
+                        found = True
+
+                if not found:
+                    services.append(json.loads(str(rawBody)))
+
+        else:
+            raise cherrypy.HTTPError(400, "Bad Request: invalid body")
 
 
 
@@ -204,8 +215,7 @@ class ResourceCatalogMQTT():
             raise Exception("The message is not well structured.")
 
 
-
-if __name__ == "__main__":
+def main():
     conf = {
         '/': {
             'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
@@ -214,21 +224,26 @@ if __name__ == "__main__":
     }
 
     cherrypy.tree.mount(ResourceCatalog(), '/', conf)
-    cherrypy.config.update({'server.socket_host': '127.0.0.1'})
-    cherrypy.config.update({'server.socket_port': 8080})
+    cherrypy.config.update({'server.socket_host': RESOURCE_CATALOG_HOST})
+    cherrypy.config.update({'server.socket_port': RESOURCE_CATALOG_PORT})
     cherrypy.engine.start()
 
     dev = ResourceCatalogMQTT("Yun_Group14")
     dev.start()
     dev.mySubscribe("tiot/group14/catalog/devices/subscription")
-    # (CATALOG AS SUBSCRIBER) when a device publishes its info on this topic the catalog will retrive them
+    # (CATALOG AS SUBSCRIBER) when a device publishes its info on this topic the catalog will retrieve them
     # (CATALOG AS PUBLISHER) for every device saved via MQTT a new specific topic will be generated
 
     while True:
         refresh(devices)
         refresh(services)
-        #print updated lists to file resourcesData.json
+        # print updated lists to file resourcesData.json
         json_object = str(users) + str(devices) + str(services)
         with open("resourcesData.json", "w") as outfile:
             outfile.write(json_object)
+
         time.sleep(45)
+
+
+if __name__ == "__main__":
+    main()
