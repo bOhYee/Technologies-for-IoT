@@ -100,6 +100,7 @@ class GenClientMQTT:
         self.messageBroker = MSG_BROKER_ADDRESS
         self.topic = []
         self.mqttClient = PahoMQTT.Client(self.id, False)
+        self.buffer = []
 
     def gen_publish(self, topic, message):
         self.mqttClient.publish(topic, message, 2)
@@ -127,15 +128,18 @@ class GenClientMQTT:
         self.mqttClient.loop_stop()
         self.mqttClient.disconnect()
 
-    def gen_def_msg_received(self, arg):
-        self.mqttClient.on_message = arg
-        self.isSubscriber = True
-
     def gen_msg_received(self, client_id, userdata, msg):
         print("Received message: '" + str(msg.payload) + "' regarding topic '" + str(msg.topic) + "'")
+        self.buffer.append(json.loads(msg.payload.decode("utf-8")))
 
     def gen_on_connect(self, client_id, userdata, flag, rc):
         print("Connected with result code "+ str(rc))
+
+    def gen_retrieve_msg_buffer(self):
+        buffer = self.buffer.copy()
+        self.buffer.clear()
+
+        return buffer
 
 
 class ClientMQTT(GenClientMQTT):

@@ -6,6 +6,21 @@ from Client import GenClientMQTT
 # Configuration constants
 RESOURCE_CATALOG_HOST = "127.0.0.1"
 RESOURCE_CATALOG_PORT = 8080
+SUBSCRIPTION = {
+                    "REST": {
+                        "device": "http://127.0.0.1:8080/devices/subscription",
+                        "service": "http://127.0.0.1:8080/services/subscription",
+                        "user": "http://127.0.0.1:8080/users/subscription"
+                    },
+                    "MQTT": {
+                        "device": {
+                            "hostname": "iot.eclipse.org",
+                            "port": "1883",
+                            "topic": "tiot/group14/catalog/devices/subscription"
+                        }
+
+                    }
+                }
 
 devices = []
 users = []
@@ -44,42 +59,31 @@ def refresh(listToRefresh):
         del listToRefresh[i]
 
 
-def myOnMessageReceived(self, paho_mqtt, userdata, message): # add or update device info
-    # A new message is received
-    topic = message.topic.split('/')
-    msg = dict(message.payload.decode('utf-8'))
-    found = False
-    if checkBody("devices", msg) is True:
-        for d in devices:
-            if d["uuid"] == msg["uuid"]:
-                d["t"] = msg["t"]  # update timestamp
-                found = True
-        if found is False:
-            devices.append(json.loads(str(msg)))
-        self.myPublish(str(topic) + "/" + str(msg["uuid"]),"Device" + (str(msg["uuid"])) + " data correctly added or updated")
-    else:
-        raise Exception("The message is not well structured.")
+def myOnMessageReceived(MQTTDev, topic, buff): # add or update device info
 
+    # Check messages received
+    for d in buff:
+        if not checkBody("devices", d):
+            raise Exception("The message is not well structured.")
+
+        found = False
+        for a in devices:
+            if d["uuid"] == a["uuid"]:
+                a["t"] = a["t"]  # update timestamp
+                found = True
+
+        if found is False:
+            devices.append(d)
+
+        #topic = topic + "/" + str(d["uuid"])
+        msg = "Device" + (str(d["uuid"])) + " data correctly added or updated"
+        #MQTTDev.gen_publish(topic, msg)
 
 class ResourceCatalog:
     exposed = True
 
     def __init__(self):
-        self.subscription = {
-                                "REST": {
-                                    "device": "http://127.0.0.1:8080/devices/subscription",
-                                    "service": "http://127.0.0.1:8080/services/subscription",
-                                    "user": "http://127.0.0.1:8080/users/subscription"
-                                },
-                                "MQTT": {
-                                    "device": {
-                                        "hostname": "iot.eclipse.org",
-                                        "port": "1883",
-                                        "topic": "tiot/group14/catalog/devices/subscription"
-                                    }
-
-                                }
-                            }
+        self.subscription = SUBSCRIPTION
 
     def GET(self, *uri, **params):
         if len(uri) == 0:
@@ -207,24 +211,35 @@ def main():
 
     dev = GenClientMQTT("Yun_Group14")
     dev.gen_start()
-    dev.gen_def_msg_received(myOnMessageReceived)
     dev.gen_subscribe("tiot/group14/catalog/devices/subscription")
     # (CATALOG AS SUBSCRIBER) when a device publishes its info on this topic the catalog will retrieve them
     # (CATALOG AS PUBLISHER) for every device saved via MQTT a new specific topic will be generated
 
     while True:
+        # Just to test
+        print("Printing devices...")
         print(devices)
-        print(services)
-        print(users)
-        refresh(devices)
-        refresh(services)
+        print("")
+        # print(services)
+        # print(users)
+
+        buffer = dev.gen_retrieve_msg_buffer()
+
+        # Just to test (again)
+        print("Printing buffer...")
+        print(buffer)
+        print("")
+        myOnMessageReceived(dev, "test", buffer)
 
         # Print updated lists to file resourcesData.json
         json_object = str(users) + str(devices) + str(services)
         with open("resourcesData.json", "w") as outfile:
             outfile.write(json_object)
 
-        time.sleep(5)
+        # Refreshing the lists
+        refresh(devices)
+        refresh(services)
+        time.sleep(60)
 
 
 if __name__ == "__main__":

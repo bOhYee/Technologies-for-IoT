@@ -11,12 +11,12 @@ def main():
     while 1:
         # At every cycle we refresh the previously inserted devices and register a new device
         print("Refreshing devices...")
-        c.refresh_devices()
+        # c.refresh_devices()
         print("Registering a new device...")
         c.register_new_device()
 
         print("Waiting...")
-        time.sleep(60)
+        time.sleep(15)
 
     #c.gen_stop()
 
