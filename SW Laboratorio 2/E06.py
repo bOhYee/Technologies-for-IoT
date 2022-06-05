@@ -1,0 +1,25 @@
+from Client import ClientMQTT
+import time
+
+
+# Main function
+def main():
+    c = ClientMQTT("Client_14")
+    c.recover_subscription_data()
+    c.gen_start()
+
+    while 1:
+        # At every cycle we refresh the previously inserted devices and register a new device
+        print("Refreshing devices...")
+        c.refresh_devices()
+        print("Registering a new device...")
+        c.register_new_device()
+
+        print("Waiting...")
+        time.sleep(60)
+
+    #c.gen_stop()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,8 +1,11 @@
-from GlobalConst import *
 import cherrypy
 import json
 import time
-import paho.mqtt.client as PahoMQTT
+from Client import GenClientMQTT
+
+# Configuration constants
+RESOURCE_CATALOG_HOST = "127.0.0.1"
+RESOURCE_CATALOG_PORT = 8080
 
 devices = []
 users = []
@@ -31,7 +34,7 @@ def refresh(listToRefresh):
     curr_time = time.time()
 
     for obj in listToRefresh:
-        diff_time = curr_time - obj["t"]
+        diff_time = curr_time - float(obj["t"])
         if diff_time > 120:
             toDelete.append(counter)
 
@@ -41,11 +44,42 @@ def refresh(listToRefresh):
         del listToRefresh[i]
 
 
+def myOnMessageReceived(self, paho_mqtt, userdata, message): # add or update device info
+    # A new message is received
+    topic = message.topic.split('/')
+    msg = dict(message.payload.decode('utf-8'))
+    found = False
+    if checkBody("devices", msg) is True:
+        for d in devices:
+            if d["uuid"] == msg["uuid"]:
+                d["t"] = msg["t"]  # update timestamp
+                found = True
+        if found is False:
+            devices.append(json.loads(str(msg)))
+        self.myPublish(str(topic) + "/" + str(msg["uuid"]),"Device" + (str(msg["uuid"])) + " data correctly added or updated")
+    else:
+        raise Exception("The message is not well structured.")
+
+
 class ResourceCatalog:
     exposed = True
 
     def __init__(self):
-        self.subscription = SUBSCRIPTION
+        self.subscription = {
+                                "REST": {
+                                    "device": "http://127.0.0.1:8080/devices/subscription",
+                                    "service": "http://127.0.0.1:8080/services/subscription",
+                                    "user": "http://127.0.0.1:8080/users/subscription"
+                                },
+                                "MQTT": {
+                                    "device": {
+                                        "hostname": "iot.eclipse.org",
+                                        "port": "1883",
+                                        "topic": "tiot/group14/catalog/devices/subscription"
+                                    }
+
+                                }
+                            }
 
     def GET(self, *uri, **params):
         if len(uri) == 0:
@@ -128,8 +162,9 @@ class ResourceCatalog:
                         # Update timestamp
                         d["t"] = rawBody["t"]
                         found = True
+                        break
 
-                if found:
+                if not found:
                     devices.append(rawBody)
 
             if uri[0] == 'users':
@@ -137,6 +172,7 @@ class ResourceCatalog:
                 for u in users:
                     if u["uuid"] == id:
                         found = True
+                        break
 
                 if not found:
                     users.append(rawBody)
@@ -156,65 +192,6 @@ class ResourceCatalog:
             raise cherrypy.HTTPError(400, "Bad Request: invalid body")
 
 
-
-class ResourceCatalogMQTT():
-
-    def __init__(self, clientID):
-        self._topic = ""
-        self._isSubscriber = False
-
-        # create an instance of paho.mqtt.client
-        self._paho_mqtt = PahoMQTT.Client(clientID, False)
-
-        # register the callback
-        self._paho_mqtt.on_connect = self.myOnConnect
-        self._paho_mqtt.on_message = self.myOnMessageReceived
-
-        self.messageBroker = 'test.mosquitto.org'
-
-    def start(self):
-        # manage connection to broker
-        self._paho_mqtt.connect(self.messageBroker, 1883)
-        self._paho_mqtt.loop_start()
-
-    def stop(self):
-        if self._isSubscriber:
-            # remember to unsuscribe if it is working also as subscriber
-            self._paho_mqtt.unsubscribe(self._topic)
-        self._paho_mqtt.loop_stop()
-        self._paho_mqtt.disconnect()
-
-    def myPublish(self, topic, message): #pub
-        # publish a message with a certain topic
-        self._paho_mqtt.publish(topic, message, 2)
-
-    def myOnConnect(self, paho_mqtt, userdata, flags, rc):
-        print("Connected to %s with result code: %d" % (self.messageBroker, rc))
-
-    def mySubscribe(self, topic):
-        print("Subscribing to %s" % topic)
-        # subscribe for a topic
-        self._paho_mqtt.subscribe(topic, 2)
-        self._isSubscriber = True
-        self._topic = topic
-
-    def myOnMessageReceived(self, paho_mqtt, userdata, message): # add or update device info
-        # A new message is received
-        topic = message.topic.split('/')
-        msg = dict(message.payload.decode('utf-8'))
-        found = False
-        if checkBody("devices", msg) is True:
-            for d in devices:
-                if d["uuid"] == msg["uuid"]:
-                    d["t"] = msg["t"]  # update timestamp
-                    found = True
-            if found is False:
-                devices.append(json.loads(str(msg)))
-            self.myPublish(str(topic) + "/" + str(msg["uuid"]),"Device" + (str(msg["uuid"])) + " data correctly added or updated")
-        else:
-            raise Exception("The message is not well structured.")
-
-
 def main():
     conf = {
         '/': {
@@ -228,21 +205,25 @@ def main():
     cherrypy.config.update({'server.socket_port': RESOURCE_CATALOG_PORT})
     cherrypy.engine.start()
 
-    dev = ResourceCatalogMQTT("Yun_Group14")
-    dev.start()
-    dev.mySubscribe("tiot/group14/catalog/devices/subscription")
+    dev = GenClientMQTT("Yun_Group14")
+    dev.gen_start()
+    dev.gen_def_msg_received(myOnMessageReceived())
+    dev.gen_subscribe("tiot/group14/catalog/devices/subscription")
     # (CATALOG AS SUBSCRIBER) when a device publishes its info on this topic the catalog will retrieve them
     # (CATALOG AS PUBLISHER) for every device saved via MQTT a new specific topic will be generated
 
     while True:
-        refresh(devices)
-        refresh(services)
+        print(devices)
+        print(services)
+        print(users)
+        #refresh(devices)
+        #refresh(services)
         # print updated lists to file resourcesData.json
         json_object = str(users) + str(devices) + str(services)
         with open("resourcesData.json", "w") as outfile:
             outfile.write(json_object)
 
-        time.sleep(45)
+        time.sleep(5)
 
 
 if __name__ == "__main__":
