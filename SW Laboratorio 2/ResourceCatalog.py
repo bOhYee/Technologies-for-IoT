@@ -207,7 +207,7 @@ def main():
 
     dev = GenClientMQTT("Yun_Group14")
     dev.gen_start()
-    dev.gen_def_msg_received(myOnMessageReceived())
+    dev.gen_def_msg_received(myOnMessageReceived)
     dev.gen_subscribe("tiot/group14/catalog/devices/subscription")
     # (CATALOG AS SUBSCRIBER) when a device publishes its info on this topic the catalog will retrieve them
     # (CATALOG AS PUBLISHER) for every device saved via MQTT a new specific topic will be generated
@@ -216,9 +216,10 @@ def main():
         print(devices)
         print(services)
         print(users)
-        #refresh(devices)
-        #refresh(services)
-        # print updated lists to file resourcesData.json
+        refresh(devices)
+        refresh(services)
+
+        # Print updated lists to file resourcesData.json
         json_object = str(users) + str(devices) + str(services)
         with open("resourcesData.json", "w") as outfile:
             outfile.write(json_object)

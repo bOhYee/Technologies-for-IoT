@@ -141,7 +141,7 @@ class GenClientMQTT:
 class ClientMQTT(GenClientMQTT):
 
     def __init__(self, client_id):
-        GenClientMQTT.__init__(client_id)
+        GenClientMQTT.__init__(self, client_id)
         self.devices_maintained = []
         self.subscription = {}
 
@@ -170,11 +170,11 @@ class ClientMQTT(GenClientMQTT):
         self.devices_maintained.append(new_device)
 
         topic = self.subscription["MQTT"]["device"]["topic"]
-        GenClientMQTT.gen_publish(topic, json.dumps(new_device))
+        GenClientMQTT.gen_publish(self, topic, json.dumps(new_device))
 
     def refresh_devices(self):
         topic = self.subscription["MQTT"]["device"]["topic"]
 
         for dev in self.devices_maintained:
             dev["t"] = str(time.time())
-            GenClientMQTT.gen_publish(topic, json.dumps(dev))
+            GenClientMQTT.gen_publish(self, topic, json.dumps(dev))
