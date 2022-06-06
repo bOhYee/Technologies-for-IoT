@@ -1,11 +1,12 @@
 import cherrypy
 import json
 import time
-from Client import GenClientMQTT
+import paho.mqtt.client as PahoMQTT
 
 # Configuration constants
 RESOURCE_CATALOG_HOST = "127.0.0.1"
 RESOURCE_CATALOG_PORT = 8080
+MSG_BROKER_ADDRESS = "localhost"
 SUBSCRIPTION = {
                     "REST": {
                         "device": "http://127.0.0.1:8080/devices/subscription",
@@ -22,10 +23,14 @@ SUBSCRIPTION = {
                     }
                 }
 
+# Lists of dictionaries managed by the ResourceCatalog
 devices = []
 users = []
 services = []
 
+# Used to determine if i received some messages by the MQTT protocol
+isReceived = False
+received = []
 
 def checkBody(resource, rawBody):
     if resource == 'devices':
@@ -59,35 +64,50 @@ def refresh(listToRefresh):
         del listToRefresh[i]
 
 
-def msgs_received(MQTTDev, base_topic, buff): # add or update device info
+def on_msg_received(client_id, userdata, msg):
+    # Define which global constants are going to be used AND modified in the on_msg_received() function
+    # Other constants do not need a similar declaration if not modified
+    global isReceived
+    global received
+    global devices
+
+    device_received = json.loads(msg.payload.decode("utf-8"))
 
     # Check messages received
-    for d in buff:
-        topic = ""
+    if not checkBody("devices", device_received):
+        raise Exception("The message is not well structured.")
 
-        if not checkBody("devices", d):
-            raise Exception("The message is not well structured.")
+    found = False
+    for dev in devices:
+        if dev["uuid"] == device_received["uuid"]:
+            dev["t"] = device_received["t"]  # update timestamp
+            found = True
+            break
 
-        found = False
-        for a in devices:
-            if d["uuid"] == a["uuid"]:
-                d["t"] = a["t"]  # update timestamp
-                found = True
+    if not found:
+        devices.append(device_received)
 
-        if not found:
-            devices.append(d)
+    isReceived = True
+    received.append(device_received)
 
-        topic = base_topic + "/" + str(d["uuid"])
-        msg = "Device" + (str(d["uuid"])) + " data correctly added or updated"
-        MQTTDev.gen_publish(topic, msg)
 
-class ResourceCatalog:
+def on_connect(client_id, userdata, flag, rc):
+    print("Connected with result code "+ str(rc))
+
+
+class ResourceCatalogREST:
     exposed = True
 
     def __init__(self):
         self.subscription = SUBSCRIPTION
 
     def GET(self, *uri, **params):
+        # Define which global constants are going to be used AND modified in this function
+        # Other constants do not need a similar declaration if not modified
+        global devices
+        global users
+        global services
+
         if len(uri) == 0:
             return json.dumps(self.subscription)
 
@@ -124,6 +144,12 @@ class ResourceCatalog:
 
     # Create resources
     def POST(self, *uri, **params):
+        # Define which global constants are going to be used AND modified in this function
+        # Other constants do not need a similar declaration if not modified
+        global devices
+        global users
+        global services
+
         if len(uri) != 2:
             raise cherrypy.HTTPError(400, "Bad Request: wrong URI for POST.")
 
@@ -147,6 +173,12 @@ class ResourceCatalog:
 
     # Update resources
     def PUT(self, *uri, **params):
+        # Define which global constants are going to be used AND modified in this function
+        # Other constants do not need a similar declaration if not modified
+        global devices
+        global users
+        global services
+        
         if len(uri) != 2:
             raise cherrypy.HTTPError(400, "Bad Request: wrong URI for POST.")
 
@@ -199,6 +231,14 @@ class ResourceCatalog:
 
 
 def main():
+    # Define which global constants are going to be used AND modified in the main() function
+    # Other constants do not need a similar declaration if not modified
+    global isReceived
+    global received
+    global devices
+    global users
+    global services
+
     conf = {
         '/': {
             'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
@@ -206,42 +246,53 @@ def main():
         }
     }
 
-    cherrypy.tree.mount(ResourceCatalog(), '/', conf)
+    cherrypy.tree.mount(ResourceCatalogREST(), '/', conf)
     cherrypy.config.update({'server.socket_host': RESOURCE_CATALOG_HOST})
     cherrypy.config.update({'server.socket_port': RESOURCE_CATALOG_PORT})
     cherrypy.engine.start()
 
-    dev = GenClientMQTT("Yun_Group14")
-    dev.gen_start()
-    dev.gen_subscribe(SUBSCRIPTION["MQTT"]["device"]["topic"])
     # (CATALOG AS SUBSCRIBER) when a device publishes its info on this topic the catalog will retrieve them
     # (CATALOG AS PUBLISHER) for every device saved via MQTT a new specific topic will be generated
+    dev = PahoMQTT.Client("Yun_Group14", False)
+    dev.on_message = on_msg_received
+    dev.on_connect = on_connect
+    dev.connect(MSG_BROKER_ADDRESS)
+    dev.loop_start()
+
+    # Subscribe to the topic which every client will use to subscribe new devices
+    # Directly taken from the SUBSCRIPTION constant
+    dev.subscribe(SUBSCRIPTION["MQTT"]["device"]["topic"], 2)
 
     while True:
         # Just to test
         print("Printing devices...")
-        print(devices)
+        print(len(devices))
         print("")
-        # print(services)
-        # print(users)
 
-        buffer = dev.gen_retrieve_msg_buffer()
+        # If the ResourceCatalog has received some subscription through a MQTT Broker, it needs to tell those client
+        # that their devices have been registered
+        if isReceived:
+            for device_received in received:
+                topic = SUBSCRIPTION["MQTT"]["device"]["topic"] + "/" + str(device_received["uuid"])
+                message = "Device " + (str(device_received["uuid"])) + " data correctly added or updated"
+                dev.publish(topic, message, 2)
 
-        # Just to test (again)
-        print("Printing buffer...")
-        print(buffer)
-        print("")
-        msgs_received(dev, SUBSCRIPTION["MQTT"]["device"]["topic"], buffer)
+            received.clear()
+            isReceived = False
 
         # Print updated lists to file resourcesData.json
         json_object = str(users) + str(devices) + str(services)
-        with open("resourcesData.json", "w") as outfile:
-            outfile.write(json_object)
+        #with open("resourcesData.json", "w") as outfile:
+        #    outfile.write(json_object)
 
         # Refreshing the lists
         refresh(devices)
         refresh(services)
-        time.sleep(60)
+        time.sleep(5)
+
+    dev.unsubscribe(topic)
+    dev.loop_stop()
+    dev.disconnect()
 
 
 if __name__ == "__main__":
