@@ -59,29 +59,7 @@ def refresh(listToRefresh):
         del listToRefresh[i]
 
 
-def msgs_received(MQTTDev, base_topic, buff): # add or update device info
-
-    # Check messages received
-    for d in buff:
-        topic = ""
-
-        if not checkBody("devices", d):
-            raise Exception("The message is not well structured.")
-
-        found = False
-        for a in devices:
-            if d["uuid"] == a["uuid"]:
-                d["t"] = a["t"]  # update timestamp
-                found = True
-
-        if not found:
-            devices.append(d)
-
-        topic = base_topic + "/" + str(d["uuid"])
-        msg = "Device" + (str(d["uuid"])) + " data correctly added or updated"
-        MQTTDev.gen_publish(topic, msg)
-
-class ResourceCatalog:
+class ResourceCatalogREST:
     exposed = True
 
     def __init__(self):
@@ -198,6 +176,69 @@ class ResourceCatalog:
             raise cherrypy.HTTPError(400, "Bad Request: invalid body")
 
 
+class ResourceCatalogMQTT:
+
+    def __init__(self, client_id):
+        self.id = client_id
+        self.messageBroker = MSG_BROKER_ADDRESS
+        self.mqttClient = PahoMQTT.Client(self.id, False)
+        self.topic = ""
+        self.buffer = []
+        self.subscription = SUBSCRIPTION
+        self.isSubscribed = False
+
+    def gen_publish(self, topic, message):
+        self.mqttClient.publish(topic, message, 2)
+
+    def gen_subscribe(self):
+        if not self.isSubscribed :
+            self.topic = self.subscription["MQTT"]["device"]["topic"]
+            self.mqttClient.subscribe(self.topic, 2)
+            self.isSubscribed = True
+
+    def gen_start(self):
+        self.mqttClient.on_connect = self.gen_on_connect
+        self.mqttClient.on_message = self.gen_msg_received
+        self.mqttClient.connect(self.messageBroker)
+        self.mqttClient.loop_start()
+
+        if not self.isSubscribed:
+            self.gen_subscribe()
+
+    def gen_stop(self):
+        self.mqttClient.unsubscribe(self.topic)
+        self.mqttClient.loop_stop()
+        self.mqttClient.disconnect()
+
+    def gen_msg_received(self, client_id, userdata, msg):
+        print("Received message: '" + str(msg.payload) + "' regarding topic '" + str(msg.topic) + "'")
+        device_received = json.loads(msg.payload.decode("utf-8"))
+
+        # Check messages received
+        if not checkBody("devices", device_received):
+            raise Exception("The message is not well structured.")
+
+        found = False
+        for dev in devices:
+            if dev["uuid"] == device_received["uuid"]:
+                dev["t"] = device_received["t"]  # update timestamp
+                found = True
+                break
+
+        if not found:
+            devices.append(device_received)
+
+        topic = self.topic + "/" + str(device_received["uuid"])
+        msg = "Device" + (str(device_received["uuid"])) + " data correctly added or updated"
+        self.gen_publish(topic, msg)
+
+        # Just to test
+        print(msg)
+
+    def gen_on_connect(self, client_id, userdata, flag, rc):
+        print("Connected with result code "+ str(rc))
+
+
 def main():
     conf = {
         '/': {
@@ -206,14 +247,14 @@ def main():
         }
     }
 
-    cherrypy.tree.mount(ResourceCatalog(), '/', conf)
+    cherrypy.tree.mount(ResourceCatalogREST(), '/', conf)
     cherrypy.config.update({'server.socket_host': RESOURCE_CATALOG_HOST})
     cherrypy.config.update({'server.socket_port': RESOURCE_CATALOG_PORT})
     cherrypy.engine.start()
 
-    dev = GenClientMQTT("Yun_Group14")
+    dev = ResourceCatalogMQTT("Yun_Group14")
     dev.gen_start()
-    dev.gen_subscribe(SUBSCRIPTION["MQTT"]["device"]["topic"])
+    dev.gen_subscribe()
     # (CATALOG AS SUBSCRIBER) when a device publishes its info on this topic the catalog will retrieve them
     # (CATALOG AS PUBLISHER) for every device saved via MQTT a new specific topic will be generated
 
@@ -225,18 +266,10 @@ def main():
         # print(services)
         # print(users)
 
-        buffer = dev.gen_retrieve_msg_buffer()
-
-        # Just to test (again)
-        print("Printing buffer...")
-        print(buffer)
-        print("")
-        msgs_received(dev, SUBSCRIPTION["MQTT"]["device"]["topic"], buffer)
-
         # Print updated lists to file resourcesData.json
         json_object = str(users) + str(devices) + str(services)
-        with open("resourcesData.json", "w") as outfile:
-            outfile.write(json_object)
+        #with open("resourcesData.json", "w") as outfile:
+        #    outfile.write(json_object)
 
         # Refreshing the lists
         refresh(devices)
