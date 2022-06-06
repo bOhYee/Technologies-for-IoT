@@ -1,11 +1,12 @@
 import cherrypy
 import json
 import time
-from Client import GenClientMQTT
+import paho.mqtt.client as PahoMQTT
 
 # Configuration constants
 RESOURCE_CATALOG_HOST = "127.0.0.1"
 RESOURCE_CATALOG_PORT = 8080
+MSG_BROKER_ADDRESS = "test.mosquitto.org"
 SUBSCRIPTION = {
                     "REST": {
                         "device": "http://127.0.0.1:8080/devices/subscription",
