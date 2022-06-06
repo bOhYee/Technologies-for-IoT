@@ -6,7 +6,6 @@ import paho.mqtt.client as PahoMQTT
 
 # Configuration constants
 RESOURCE_CATALOG_ADDRESS = "http://127.0.0.1:8080/"
-#MSG_BROKER_ADDRESS = "localhost"
 MSG_BROKER_ADDRESS = "test.mosquitto.org"
 
 
@@ -90,7 +89,7 @@ class ClientREST:
                 req.raise_for_status()
 
 
-class GenClientMQTT:
+class ClientMQTT:
 
     def __init__(self, client_id):
 
@@ -99,9 +98,13 @@ class GenClientMQTT:
 
         self.id = client_id
         self.messageBroker = MSG_BROKER_ADDRESS
-        self.topic = []
         self.mqttClient = PahoMQTT.Client(self.id, False)
+        self.topic = []
         self.buffer = []
+        self.devices_maintained = []
+        self.subscription = {}
+
+        self.__gen_recover_subscription_data()
 
     def gen_publish(self, topic, message):
         self.mqttClient.publish(topic, message, 2)
@@ -124,34 +127,19 @@ class GenClientMQTT:
             for top in self.topic:
                 self.mqttClient.unsubscribe(top)
 
-            self.topic.clear()
-
+        self.topic.clear()
         self.mqttClient.loop_stop()
         self.mqttClient.disconnect()
 
     def gen_msg_received(self, client_id, userdata, msg):
-        #print("Received message: '" + str(msg.payload) + "' regarding topic '" + str(msg.topic) + "'")
-        self.buffer.append(json.loads(msg.payload.decode("utf-8")))
+        print("Received message: '" + str(msg.payload) + "' regarding topic '" + str(msg.topic) + "'")
 
     def gen_on_connect(self, client_id, userdata, flag, rc):
         print("Connected with result code "+ str(rc))
 
-    def gen_retrieve_msg_buffer(self):
-        buffer = self.buffer.copy()
-        self.buffer.clear()
-
-        return buffer
-
-
-class ClientMQTT(GenClientMQTT):
-
-    def __init__(self, client_id):
-        GenClientMQTT.__init__(self, client_id)
-        self.devices_maintained = []
-        self.subscription = {}
-
-    def recover_subscription_data(self):
+    def __gen_recover_subscription_data(self):
         req = requests.get(RESOURCE_CATALOG_ADDRESS)
+
         # Raises an exception if it cannot reach the ResourceCatalog
         if req.status_code != 200:
             req.raise_for_status()
@@ -162,10 +150,10 @@ class ClientMQTT(GenClientMQTT):
 
         self.subscription = req.json()
 
-    def get_subscription_data(self):
+    def gen_get_subscription_data(self):
         return self.subscription
 
-    def register_new_device(self):
+    def gen_register_new_device(self):
         # Creation of the new device
         new_device = {}
         new_device["uuid"] = str(uuid.uuid1())
@@ -175,11 +163,11 @@ class ClientMQTT(GenClientMQTT):
         self.devices_maintained.append(new_device)
 
         topic = self.subscription["MQTT"]["device"]["topic"]
-        GenClientMQTT.gen_publish(self, topic, json.dumps(new_device))
+        self.gen_publish(topic, json.dumps(new_device))
 
     def refresh_devices(self):
         topic = self.subscription["MQTT"]["device"]["topic"]
 
         for dev in self.devices_maintained:
             dev["t"] = str(time.time())
-            GenClientMQTT.gen_publish(self, topic, json.dumps(dev))
+            self.gen_publish(topic, json.dumps(dev))
