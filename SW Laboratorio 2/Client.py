@@ -6,7 +6,8 @@ import paho.mqtt.client as PahoMQTT
 
 # Configuration constants
 RESOURCE_CATALOG_ADDRESS = "http://127.0.0.1:8080/"
-MSG_BROKER_ADDRESS = "test.mosquitto.org"
+MSG_BROKER_ADDRESS = "localhost"
+#MSG_BROKER_ADDRESS = "test.mosquitto.org"
 
 
 class ClientREST:
@@ -129,7 +130,7 @@ class GenClientMQTT:
         self.mqttClient.disconnect()
 
     def gen_msg_received(self, client_id, userdata, msg):
-        print("Received message: '" + str(msg.payload) + "' regarding topic '" + str(msg.topic) + "'")
+        #print("Received message: '" + str(msg.payload) + "' regarding topic '" + str(msg.topic) + "'")
         self.buffer.append(json.loads(msg.payload.decode("utf-8")))
 
     def gen_on_connect(self, client_id, userdata, flag, rc):

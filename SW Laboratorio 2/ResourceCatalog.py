@@ -59,24 +59,26 @@ def refresh(listToRefresh):
         del listToRefresh[i]
 
 
-def myOnMessageReceived(MQTTDev, topic, buff): # add or update device info
+def msgs_received(MQTTDev, base_topic, buff): # add or update device info
 
     # Check messages received
     for d in buff:
+        topic = ""
+
         if not checkBody("devices", d):
             raise Exception("The message is not well structured.")
 
         found = False
         for a in devices:
             if d["uuid"] == a["uuid"]:
-                a["t"] = a["t"]  # update timestamp
+                d["t"] = a["t"]  # update timestamp
                 found = True
 
-        if found is False:
+        if not found:
             devices.append(d)
 
-        #topic = topic + "/" + str(d["uuid"])
-        msg = "Device" + (str(d["uuid"])) + " data correctly added or updated"
+        #topic = base_topic + "/" + str(d["uuid"])
+        #msg = "Device" + (str(d["uuid"])) + " data correctly added or updated"
         #MQTTDev.gen_publish(topic, msg)
 
 class ResourceCatalog:
@@ -211,7 +213,7 @@ def main():
 
     dev = GenClientMQTT("Yun_Group14")
     dev.gen_start()
-    dev.gen_subscribe("tiot/group14/catalog/devices/subscription")
+    dev.gen_subscribe(SUBSCRIPTION["MQTT"]["device"]["topic"])
     # (CATALOG AS SUBSCRIBER) when a device publishes its info on this topic the catalog will retrieve them
     # (CATALOG AS PUBLISHER) for every device saved via MQTT a new specific topic will be generated
 
@@ -229,7 +231,7 @@ def main():
         print("Printing buffer...")
         print(buffer)
         print("")
-        myOnMessageReceived(dev, "test", buffer)
+        msgs_received(dev, SUBSCRIPTION["MQTT"]["device"]["topic"], buffer)
 
         # Print updated lists to file resourcesData.json
         json_object = str(users) + str(devices) + str(services)
