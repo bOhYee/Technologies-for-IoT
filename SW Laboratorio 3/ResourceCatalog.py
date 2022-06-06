@@ -203,13 +203,13 @@ class ResourceCatalogMQTT:
         self.mqttClient.connect(self.messageBroker)
         self.mqttClient.loop_start()
 
-        if not self.isSubscribed:
-            self.gen_subscribe()
-
     def gen_stop(self):
         self.mqttClient.unsubscribe(self.topic)
         self.mqttClient.loop_stop()
         self.mqttClient.disconnect()
+
+    def gen_on_connect(self, client_id, userdata, flag, rc):
+        print("Connected with result code "+ str(rc))
 
     def gen_msg_received(self, client_id, userdata, msg):
         print("Received message: '" + str(msg.payload) + "' regarding topic '" + str(msg.topic) + "'")
@@ -229,15 +229,12 @@ class ResourceCatalogMQTT:
         if not found:
             devices.append(device_received)
 
-        topic = self.topic + "/" + str(device_received["uuid"])
-        msg = "Device" + (str(device_received["uuid"])) + " data correctly added or updated"
-        self.gen_publish(topic, msg)
+        #topic = self.topic + "/" + str(device_received["uuid"])
+        #msg = "Device" + (str(device_received["uuid"])) + " data correctly added or updated"
+        #self.gen_publish(topic, msg)
 
         # Just to test
         print(msg)
-
-    def gen_on_connect(self, client_id, userdata, flag, rc):
-        print("Connected with result code "+ str(rc))
 
 
 def main():
@@ -275,7 +272,7 @@ def main():
         # Refreshing the lists
         refresh(devices)
         refresh(services)
-        time.sleep(60)
+        time.sleep(5)
 
 
 if __name__ == "__main__":
