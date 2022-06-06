@@ -77,9 +77,9 @@ def msgs_received(MQTTDev, base_topic, buff): # add or update device info
         if not found:
             devices.append(d)
 
-        #topic = base_topic + "/" + str(d["uuid"])
-        #msg = "Device" + (str(d["uuid"])) + " data correctly added or updated"
-        #MQTTDev.gen_publish(topic, msg)
+        topic = base_topic + "/" + str(d["uuid"])
+        msg = "Device" + (str(d["uuid"])) + " data correctly added or updated"
+        MQTTDev.gen_publish(topic, msg)
 
 class ResourceCatalog:
     exposed = True
