@@ -178,7 +178,7 @@ class ResourceCatalogREST:
         global devices
         global users
         global services
-        
+
         if len(uri) != 2:
             raise cherrypy.HTTPError(400, "Bad Request: wrong URI for POST.")
 
@@ -258,7 +258,7 @@ def main():
     dev.on_connect = on_connect
     dev.connect(MSG_BROKER_ADDRESS)
     dev.loop_start()
-
+    
     # Subscribe to the topic which every client will use to subscribe new devices
     # Directly taken from the SUBSCRIPTION constant
     dev.subscribe(SUBSCRIPTION["MQTT"]["device"]["topic"], 2)
