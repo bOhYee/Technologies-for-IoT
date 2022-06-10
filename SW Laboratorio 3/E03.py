@@ -38,12 +38,14 @@ def main():
     if req.status_code != 200:
         req.raise_for_status()
 
+    # Filter the list of devices through removing the ones who do not have a LED
     devices = json.loads(req.text)
     for dev in devices:
         if "led" not in dev["res"] :
             devices.remove(dev)
 
 
+    # Create the MQTT client
     c = PahoMQTT.Client("Client_E02_G14")
     c.on_connect = on_connect
     c.on_message = on_message

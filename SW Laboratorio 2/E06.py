@@ -5,6 +5,7 @@ import time
 # Main function
 def main():
     c = ClientMQTT("Client_14")
+    c.recover_subscription_data()
     c.gen_start()
 
     while 1:
@@ -12,7 +13,7 @@ def main():
         print("Refreshing devices...")
         # c.refresh_devices()
         print("Registering a new device...")
-        c.gen_register_new_device()
+        c.register_new_device()
 
         print("Waiting...")
         time.sleep(15)

@@ -7,8 +7,14 @@ import requests
 # Configuration constants
 RESOURCE_CATALOG_ADDRESS = "http://127.0.0.1:8080/"
 MSG_BROKER_ADDRESS = "localhost"
-BASE_TOPIC_SUB = "tiot/group14/"
-BASE_TOPIC_PUB = "tiot/group14/command/"
+BASE_TOPIC_PUB = "tiot/group14/"
+BASE_TOPIC_SUB = "tiot/group14/command/"
+
+def on_connect(client_id, userdata, flag, rc):
+    print("Connected with result code "+ str(rc))
+
+def on_message(client_id, userdata, msg):
+    print("Received message: '" + str(msg.payload) + "' regarding topic '" + str(msg.topic) + "'")
 
 def main():
     # Define the uuid of the arduino client
@@ -52,9 +58,8 @@ def main():
     if req.status_code != 200:
         req.raise_for_status()
 
-
     # Create the MQTT client
-    a_client = PahoMQTT.Client("Yun_Group14", False
+    a_client = PahoMQTT.Client("Yun_Group14", False)
     a_client.on_connect = on_connect
     a_client.on_message = on_message
     a_client.connect(MSG_BROKER_ADDRESS)

@@ -6,7 +6,7 @@ import paho.mqtt.client as PahoMQTT
 
 # Configuration constants
 RESOURCE_CATALOG_ADDRESS = "http://127.0.0.1:8080/"
-MSG_BROKER_ADDRESS = "test.mosquitto.org"
+MSG_BROKER_ADDRESS = "localhost"
 
 
 class ClientREST:
@@ -165,7 +165,7 @@ class ClientMQTT:
         topic = self.subscription["MQTT"]["device"]["topic"]
         self.gen_publish(topic, json.dumps(new_device))
 
-    def refresh_devices(self):
+    def gen_refresh_devices(self):
         topic = self.subscription["MQTT"]["device"]["topic"]
 
         for dev in self.devices_maintained:
