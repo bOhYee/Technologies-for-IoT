@@ -1,6 +1,6 @@
-#include<Bridge.h>
-#include<BridgeServer.h>
-#include<BridgeClient.h>
+#include <Bridge.h>
+#include <BridgeServer.h>
+#include <BridgeClient.h>
 #include <math.h>
 
 // LED variables
@@ -37,25 +37,21 @@ String createBody(int status, float retVal, char type){
     body.concat("\"e\" :");
     body.concat("[\n{");
     /*body += "\"n\": ";
-
     if(type == 'L'){
         body += "\"led\",\n"
     }
     else if(type == 'T'){
         body += "\"temperature\",\n"
     }
-
     body += "\"t\" : " + String(millis()) + ",\n";
     body += "\"v\" : " + String(retVal) + ",\n";
     body += "\"u\" : ";
-
     if(type == 'L'){
         body += "\"null\"\n";
     }
     else if(type == 'T'){
         body += "\"Cel\"\n";
     }
-
     body += "}\n]\n}";*/
 
     return body;
@@ -117,7 +113,7 @@ void setup(){
     Bridge.begin();
     Serial.println("Bridge connection established.");
 
-    server.listenOnLocalhost();
+    server.noListenOnLocalhost();
     server.begin();
     Serial.println("Initialized request management on port 5555...");
 }
