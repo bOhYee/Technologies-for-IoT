@@ -8,20 +8,20 @@ RESOURCE_CATALOG_HOST = "127.0.0.1"
 RESOURCE_CATALOG_PORT = 8080
 MSG_BROKER_ADDRESS = "localhost"
 SUBSCRIPTION = {
-                    "REST": {
-                        "device": "http://127.0.0.1:8080/devices/subscription",
-                        "service": "http://127.0.0.1:8080/services/subscription",
-                        "user": "http://127.0.0.1:8080/users/subscription"
-                    },
-                    "MQTT": {
-                        "device": {
-                            "hostname": "iot.eclipse.org",
-                            "port": "1883",
-                            "topic": "tiot/group14/catalog/devices/subscription"
-                        }
+    "REST": {
+        "device": "http://127.0.0.1:8080/devices/subscription",
+        "service": "http://127.0.0.1:8080/services/subscription",
+        "user": "http://127.0.0.1:8080/users/subscription"
+    },
+    "MQTT": {
+        "device": {
+            "hostname": "iot.eclipse.org",
+            "port": "1883",
+            "topic": "tiot/group14/catalog/devices/subscription"
+        }
 
-                    }
-                }
+    }
+}
 
 # Lists of dictionaries managed by the ResourceCatalog
 devices = []
@@ -32,7 +32,10 @@ services = []
 isReceived = False
 received = []
 
-def checkBody(resource, rawBody):
+
+def checkBody(resource, raw):
+    rawBody = raw["e"]
+
     if resource == 'devices':
         for k in rawBody.keys():
             if k not in ["uuid", "ep", "res", "t"]:
@@ -79,8 +82,8 @@ def on_msg_received(client_id, userdata, msg):
 
     found = False
     for dev in devices:
-        if dev["uuid"] == device_received["uuid"]:
-            dev["t"] = device_received["t"]  # update timestamp
+        if dev["e"][0]["uuid"] == device_received["e"][0]["uuid"]:
+            dev["e"][0]["t"] = device_received["t"]  # update timestamp
             found = True
             break
 
@@ -92,7 +95,7 @@ def on_msg_received(client_id, userdata, msg):
 
 
 def on_connect(client_id, userdata, flag, rc):
-    print("Connected with result code "+ str(rc))
+    print("Connected with result code " + str(rc))
 
 
 class ResourceCatalogREST:
@@ -117,7 +120,7 @@ class ResourceCatalogREST:
                     return json.dumps(devices)
                 else:
                     for d in devices:
-                        if d["uuid"] == uri[1]:
+                        if d["e"][0]["uuid"] == uri[1]:
                             return json.dumps(d)
                 raise cherrypy.HTTPError(404, "Invalid uuid")
 
@@ -126,7 +129,7 @@ class ResourceCatalogREST:
                     return json.dumps(users)
                 else:
                     for u in users:
-                        if u["uuid"] == uri[1]:
+                        if u["e"][0]["uuid"] == uri[1]:
                             return json.dumps(u)
                 raise cherrypy.HTTPError(404, "Invalid uuid")
 
@@ -135,7 +138,7 @@ class ResourceCatalogREST:
                     return json.dumps(services)
                 else:
                     for s in services:
-                        if s["uuid"] == uri[1]:
+                        if s["e"][0]["uuid"] == uri[1]:
                             return json.dumps(s)
                 raise cherrypy.HTTPError(404, "Invalid uuid")
 
@@ -196,9 +199,9 @@ class ResourceCatalogREST:
             if uri[0] == 'devices':
 
                 for d in devices:
-                    if d["uuid"] == id:
+                    if d["e"][0]["uuid"] == id:
                         # Update timestamp
-                        d["t"] = rawBody["t"]
+                        d["e"][0]["t"] = rawBody["t"]
                         found = True
                         break
 
@@ -208,7 +211,7 @@ class ResourceCatalogREST:
             if uri[0] == 'users':
 
                 for u in users:
-                    if u["uuid"] == id:
+                    if u["e"][0]["uuid"] == id:
                         found = True
                         break
 
@@ -218,9 +221,9 @@ class ResourceCatalogREST:
             if uri[0] == 'services':
 
                 for s in services:
-                    if s["uuid"] == id:
+                    if s["e"][0]["uuid"] == id:
                         # Update timestamp
-                        s["t"] = rawBody["t"]
+                        s["e"][0]["t"] = rawBody["t"]
                         found = True
 
                 if not found:
@@ -258,7 +261,7 @@ def main():
     dev.on_connect = on_connect
     dev.connect(MSG_BROKER_ADDRESS)
     dev.loop_start()
-    
+
     # Subscribe to the topic which every client will use to subscribe new devices
     # Directly taken from the SUBSCRIPTION constant
     dev.subscribe(SUBSCRIPTION["MQTT"]["device"]["topic"], 2)
@@ -273,17 +276,17 @@ def main():
         # that their devices have been registered
         if isReceived:
             for device_received in received:
-                topic = SUBSCRIPTION["MQTT"]["device"]["topic"] + "/" + str(device_received["uuid"])
-                message = "Device " + (str(device_received["uuid"])) + " data correctly added or updated"
+                topic = SUBSCRIPTION["MQTT"]["device"]["topic"] + "/" + str(device_received["e"][0]["uuid"])
+                message = "Device " + (str(device_received["e"][0]["uuid"])) + " data correctly added or updated"
                 dev.publish(topic, message, 2)
 
             received.clear()
             isReceived = False
 
-        # Print updated lists to file resourcesData.json
+        #Print updated lists to file resourcesData.json
         json_object = str(users) + str(devices) + str(services)
-        #with open("resourcesData.json", "w") as outfile:
-        #    outfile.write(json_object)
+        with open("resourcesData.json", "w") as outfile:
+            outfile.write(json_object)
 
         # Refreshing the lists
         refresh(devices)
