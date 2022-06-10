@@ -1,11 +1,12 @@
 import uuid
 import time
 import json
-import random
 import requests
 import paho.mqtt.client as mqtt
 
 # Client name
+import urllib3
+
 CLIENT_NAME = "Group_14"
 # Broker IP
 HOST_NAME = '127.0.0.1'
@@ -17,12 +18,15 @@ MESSAGE = {
 }
 TEMP = {
     "n": "temperature",
-    "t": 0,
-    "v": 0,
+    "t": 0.0,
+    "v": 0.0,
     "u": "Celsius"
 }
 
-
+device_data = {
+    "bn": "DeviceGroup14",
+    "e": []
+}
 def myOnConnect(client, userdata, flags, rc):
     # Print result of connection attempt
     print("Connected to broker with result code {0}".format(str(rc)))
@@ -71,21 +75,27 @@ if __name__ == '__main__':
     topic_data = recoverData()
     print(topic_data)
     # 2. register as a new device through MQTT communicating the topic for temperature measurements and for led command
-    device_data = {"uuid": str(uuid.uuid1()), "ep": "MQTT", "res": ["temperature", "led"], "t": str(time.time())}
+    device = [{"uuid": str(uuid.uuid1()), "ep": ["TempSensor", "LedSensor"], "res": ["temperature", "led"], "t": str(time.time())}]
+    device_data["e"] = device
     print(str(json.dumps(device_data)))
     client.publish(topic_data, json.dumps(device_data), 2)
 
     while True:
-        # pubblicare periodicamente un valore di temperatura sul topic /tiot/group14
-        #da sostituire
-        TEMP["t"] = str(time.time())
-        TEMP["v"] = float(random.randrange(-273, 500, 3))
+        # retrieve temperature values from arduino
+        http = urllib3.PoolManager()
+        msg = http.request("GET", "http://127.0.0.1:8080/arduino/temperature")
+        json_msg = json.loads(str(msg))
+        val = json_msg["e"][0]["v"]
+        time.sleep(10)
+        # format the data in senML and publish them
+        TEMP["t"] = time.time()
+        TEMP["v"] = val
         MESSAGE["e"] = [TEMP]
         json_data = json.dumps(MESSAGE).encode('utf-8')
         client.publish("tiot/group14", json_data)
         # 3. renew each 1 minute the subscription
         time.sleep(60)
-        device_data["t"] = str(time.time())
+        device_data["e"][0]["t"] = str(time.time())
         client.publish(topic_data, str(json.dumps(device_data)), 2)
         print("Aggiornamento: " + str(json.dumps(device_data)))
 
