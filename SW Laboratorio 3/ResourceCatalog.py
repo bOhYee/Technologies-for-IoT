@@ -34,7 +34,7 @@ import paho.mqtt.client as PahoMQTT
 # Configuration constants
 RESOURCE_CATALOG_HOST = "127.0.0.1"
 RESOURCE_CATALOG_PORT = 8080
-MSG_BROKER_ADDRESS = "localhost"
+MSG_BROKER_ADDRESS = "test.mosquitto.org"
 SUBSCRIPTION = {
     "REST": {
         "device": "http://127.0.0.1:8080/devices/subscription",
@@ -287,7 +287,7 @@ def main():
 
     # (CATALOG AS SUBSCRIBER) when a device publishes its info on this topic the catalog will retrieve them
     # (CATALOG AS PUBLISHER) for every device saved via MQTT a new specific topic will be generated
-    dev = PahoMQTT.Client("Yun_Group14", False)
+    dev = PahoMQTT.Client("Yun_Group14", True)
     dev.on_message = on_msg_received
     dev.on_connect = on_connect
     dev.connect(MSG_BROKER_ADDRESS)

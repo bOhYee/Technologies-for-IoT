@@ -11,11 +11,12 @@ BASE_TOPIC_PUB = "tiot/group14/command/"
 
 
 def on_connect(id, userdata, flag, rc):
-    print("Connected with result code " + str(rc))
+    print("Connected: " + id + " with result code " + str(rc))
 
 
 def on_message(id, userdata, msg):
     print("test")
+
 
 def main():
     req = requests.get(RESOURCE_CATALOG_ADDRESS)
@@ -57,7 +58,7 @@ def main():
             devices.remove(dev)
 
     # Create the MQTT client
-    c = PahoMQTT.Client("Client_E02_G14")
+    c = PahoMQTT.Client("Client_E02_G14", True)
     c.on_connect = on_connect
     c.on_message = on_message
     c.connect(MSG_BROKER_ADDRESS)
@@ -103,6 +104,7 @@ def main():
 
     c.loop_stop()
     c.disconnect()
+
 
 if __name__ == "__main__":
     main()

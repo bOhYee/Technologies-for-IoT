@@ -10,7 +10,7 @@ import random
 
 # Configuration constants
 RESOURCE_CATALOG_ADDRESS = "http://127.0.0.1:8080/"
-MSG_BROKER_ADDRESS = "localhost"
+MSG_BROKER_ADDRESS = "test.mosquitto.org"
 BASE_TOPIC_PUB = "tiot/group14/"
 BASE_TOPIC_SUB = "tiot/group14/command/"
 LOW = 0
@@ -76,14 +76,14 @@ def main():
         req.raise_for_status()
 
     # Create the MQTT client
-    a_client = PahoMQTT.Client("Yun_Group14")
+    a_client = PahoMQTT.Client("Yun_Group14", True)
     a_client.on_connect = on_connect
     a_client.on_message = on_message
     a_client.connect(MSG_BROKER_ADDRESS)
     a_client.loop_start()
-    #a_client.subscribe(topic_s, 2)
+    a_client.subscribe(topic_s, 2)
     print(topic_s)
-    #a_client.subscribe(subscription["MQTT"]["device"]["topic"] + "/" + uuid_cl, 2)
+    a_client.subscribe(subscription["MQTT"]["device"]["topic"] + "/" + uuid_cl, 2)
     print(subscription["MQTT"]["device"]["topic"] + "/" + uuid_cl)
 
     time.sleep(50)
