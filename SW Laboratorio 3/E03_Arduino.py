@@ -21,13 +21,25 @@ led_state = 0
 
 
 def on_connect(client_id, userdata, flag, rc):
-    print("Connected with result code "+ str(rc))
+    print("Connected with result code " + str(rc))
 
 
 def on_message(client_id, userdata, msg):
     global led_state
     print("Entered")
     print("Received message: '" + str(msg.payload) + "' regarding topic '" + str(msg.topic) + "'")
+
+    # try:
+    #    payload = json.loads(msg.payload)
+    #       body = payload["e"][0]
+    #
+    #       if not (body["v"] == HIGH or body["v"] == LOW):
+    #            raise Exception("Value received not valid!")
+
+    #     led_state = body["v"]
+    #     print("LED state passed to " + body["v"])
+    # except Exception as e:
+    #     pass
 
 
 def main():
@@ -39,12 +51,12 @@ def main():
     topic_s = BASE_TOPIC_SUB + uuid_cl
 
     payload = {
-        "bn" : "YunGroup14",
+        "bn": "YunGroup14",
         "e": [{
-            "n" : "temperature",
-            "t" : "",
-            "v" : 0.0,
-            "u" : "celsius"
+            "n": "temperature",
+            "t": "",
+            "v": 0.0,
+            "u": "celsius"
         }]
     }
 
@@ -59,15 +71,15 @@ def main():
     new_device = {
         "bn": uuid_cl,
         "e": [{
-            "ep" : "MQTT",
-            "res" : ["led"],
-            "t" : str(time.time())
+            "ep": "MQTT",
+            "res": ["led"],
+            "t": str(time.time())
         }]
     }
 
     # Define the header of the request
     header = {
-        "Content-Type" : "application/json"
+        "Content-Type": "application/json"
     }
 
     # Make public this device
@@ -87,11 +99,11 @@ def main():
     print(subscription["MQTT"]["device"]["topic"] + "/" + uuid_cl)
 
     time.sleep(50)
-    #while True:
-        #time.sleep(10)
-        #payload["e"][0]["t"] = str(time.time())
-        #payload["e"][0]["v"] = float(random.randrange(-273, 500, 3))
-        #a_client.publish(topic_p, json.dumps(payload), 2)
+    # while True:
+    # time.sleep(10)
+    # payload["e"][0]["t"] = str(time.time())
+    # payload["e"][0]["v"] = float(random.randrange(-273, 500, 3))
+    # a_client.publish(topic_p, json.dumps(payload), 2)
 
     a_client.unsubscribe(topic_s)
     a_client.unsubscribe(subscription["MQTT"]["device"]["topic"] + "/" + uuid_cl)
