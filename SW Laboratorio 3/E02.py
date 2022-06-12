@@ -8,7 +8,7 @@ import paho.mqtt.client as mqtt
 CLIENT_NAME = "Group_14"
 # Broker IP
 HOST_NAME = '127.0.0.1'
-RESOURCE_CATALOG_ADDRESS = "http://127.0.0.1/"
+RESOURCE_CATALOG_ADDRESS = "http://127.0.0.1:8080/"
 
 temp_values = []
 service_data = {
@@ -35,16 +35,17 @@ def myOnMessageReceived(client, userdata, message):
 
 
 # retrieve information of the Catalog available subscriptions via REST
-def recoverData():
+def recover_data():
     req = requests.get(RESOURCE_CATALOG_ADDRESS)
     # Raises an exception if it cannot reach the ResourceCatalog
     if req.status_code != 200:
         req.raise_for_status()
+
     subscription = req.json()
     return subscription["REST"]["service"]
 
 
-if __name__ == '__main__':
+def main():
     client = mqtt.Client(CLIENT_NAME)
     client.on_connect = myOnConnect
     client.on_message = myOnMessageReceived
@@ -52,15 +53,19 @@ if __name__ == '__main__':
     client.loop_start()
 
     # 1. retrieve information of the Catalog
-    rest_url = recoverData()
-    print(rest_url)
+    rest_url = recover_data()
 
     # 2. register as a new service through REST
     service = [{"ep": "TempService", "des": "I provide temperature data", "t": str(time.time())}]
     service_data["bn"] = str(uuid.uuid1())
     service_data["e"] = service
-    json_data = json.dumps(service_data).encode('utf-8')
-    r = requests.post(rest_url, service_data)
+
+    # Define the header of the request
+    header = {
+        "Content-Type": "application/json"
+    }
+
+    r = requests.post(rest_url, headers=header, data=json.dumps(service_data))
     if r.status_code != 200:
         r.raise_for_status()
 
@@ -69,13 +74,15 @@ if __name__ == '__main__':
     req = requests.get(RESOURCE_CATALOG_ADDRESS + "devices/")
     if req.status_code != 200:
         req.raise_for_status()
+
     # Subscribe to the topic where temperature values are published
     devices = json.loads(req.text)
     for dev in devices:
-        if dev["bn"] == "DeviceGroup14": #look for our Arduino device
+        if dev["bn"] == "DeviceGroup14":  # look for our Arduino device
             res_list = dev["e"][0]["res"]
             if "temperature" in res_list:
-                index_endpoint = res_list.index("temperature") # resources name and corresponding endpoints have the same index
+                index_endpoint = res_list.index(
+                    "temperature")  # resources name and corresponding endpoints have the same index
                 client.subscribe(dev["e"][0]["ep"][index_endpoint])
         else:
             raise Exception("Device not available")
@@ -83,6 +90,10 @@ if __name__ == '__main__':
     time.sleep(60)
     client.loop_stop()
     client.disconnect()
+
+
+if __name__ == '__main__':
+    main()
 
 """
 The exchanged data is in senML format.

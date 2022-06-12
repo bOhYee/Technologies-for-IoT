@@ -2,6 +2,7 @@ import cherrypy
 import json
 import time
 import paho.mqtt.client as PahoMQTT
+import uuid
 
 # This resource catalog will use only JSON packages that are structured in a certain way
 # The package must have a structure similar to the packages used in senML format
@@ -34,7 +35,7 @@ import paho.mqtt.client as PahoMQTT
 # Configuration constants
 RESOURCE_CATALOG_HOST = "127.0.0.1"
 RESOURCE_CATALOG_PORT = 8080
-MSG_BROKER_ADDRESS = "test.mosquitto.org"
+MSG_BROKER_ADDRESS = "localhost"
 SUBSCRIPTION = {
     "REST": {
         "device": "http://127.0.0.1:8080/devices/subscription",
@@ -59,6 +60,9 @@ services = []
 # Used to determine if the catalog received some messages by MQTT protocol
 isReceived = False
 received = []
+
+# Used to check that the connection to the MQTT Broker
+isConnected = False
 
 
 def check_body(resource, raw):
@@ -122,7 +126,10 @@ def on_msg_received(client_id, userdata, msg):
 
 
 def on_connect(client_id, userdata, flag, rc):
+    global isConnected
+
     print("Connected with result code " + str(rc))
+    isConnected = True
 
 
 class ResourceCatalogREST:
@@ -272,6 +279,9 @@ def main():
     global users
     global services
 
+    # UUID of the resource catalog
+    uuid_rc = str(uuid.uuid1())
+
     # Configuration of the cherrypy instance
     conf = {
         '/': {
@@ -279,7 +289,6 @@ def main():
             'tools.sessions.on': True,
         }
     }
-
     cherrypy.tree.mount(ResourceCatalogREST(), '/', conf)
     cherrypy.config.update({'server.socket_host': RESOURCE_CATALOG_HOST})
     cherrypy.config.update({'server.socket_port': RESOURCE_CATALOG_PORT})
@@ -287,32 +296,26 @@ def main():
 
     # (CATALOG AS SUBSCRIBER) when a device publishes its info on this topic the catalog will retrieve them
     # (CATALOG AS PUBLISHER) for every device saved via MQTT a new specific topic will be generated
-    dev = PahoMQTT.Client("Yun_Group14", True)
+    dev = PahoMQTT.Client(uuid_rc, True)
     dev.on_message = on_msg_received
     dev.on_connect = on_connect
     dev.connect(MSG_BROKER_ADDRESS)
     dev.loop_start()
+
+    while not isConnected:
+        pass
 
     # Subscribe to the topic which every client will use to subscribe new devices
     # Directly taken from the SUBSCRIPTION constant
     dev.subscribe(SUBSCRIPTION["MQTT"]["device"]["topic"], 2)
 
     while True:
-        # Just to test
-        print("Printing devices...")
-        print(devices)
-        print("")
-
-        print("Printing services...")
-        print(services)
-        print("")
-
         # If the ResourceCatalog has received some subscription through a MQTT Broker, it needs to tell those client
         # that their devices have been registered
         if isReceived:
             for device_received in received:
                 # Publish the reception message
-                topic = SUBSCRIPTION["MQTT"]["device"]["topic"] + "/" + str(device_received["e"][0]["uuid"])
+                topic = SUBSCRIPTION["MQTT"]["device"]["topic"] + "/" + str(device_received["bn"])
                 message = "Device " + (str(device_received["e"][0]["uuid"])) + " data correctly added or updated"
                 dev.publish(topic, message, 2)
 
@@ -327,7 +330,7 @@ def main():
         # Refreshing the lists
         refresh(devices)
         refresh(services)
-        time.sleep(5)
+        time.sleep(30)
 
     dev.unsubscribe(topic)
     dev.loop_stop()

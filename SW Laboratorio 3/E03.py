@@ -9,16 +9,21 @@ RESOURCE_CATALOG_ADDRESS = "http://127.0.0.1:8080/"
 MSG_BROKER_ADDRESS = "localhost"
 BASE_TOPIC_PUB = "tiot/group14/command/"
 
+# Used to check that the connection to the MQTT Broker
+isConnected = False
+
 
 def on_connect(id, userdata, flag, rc):
-    print("Connected: " + id + " with result code " + str(rc))
+    global isConnected
 
-
-def on_message(id, userdata, msg):
-    print("test")
+    print("Connected with result code " + str(rc))
+    isConnected = True
 
 
 def main():
+    # Define the uuid of the client
+    uuid_cl = str(uuid.uuid1())
+
     req = requests.get(RESOURCE_CATALOG_ADDRESS)
     if req.status_code != 200:
         req.raise_for_status()
@@ -28,7 +33,7 @@ def main():
 
     # Define the service
     new_service = {
-        "bn" : str(uuid.uuid1()),
+        "bn" : uuid_cl,
         "e":[{
             "des": "Turn on/off LED",
             "ep" : "MQTT",
@@ -58,11 +63,13 @@ def main():
             devices.remove(dev)
 
     # Create the MQTT client
-    c = PahoMQTT.Client("Client_E02_G14", True)
+    c = PahoMQTT.Client(uuid_cl, True)
     c.on_connect = on_connect
-    c.on_message = on_message
     c.connect(MSG_BROKER_ADDRESS)
     c.loop_start()
+
+    while not isConnected:
+        pass
 
     # Define the structure of the payload for the MQTT packages
     payload = {
@@ -88,16 +95,15 @@ def main():
             # Create the topic with the uuid
             topic = BASE_TOPIC_PUB + str(name)
 
-            # Create the package to send
-            if led_value == 0:
-                led_value = 1
-            else:
-                led_value = 0
-
             payload["bn"] = name
             payload["e"][0]["v"] = led_value
-            print("Publishing on " + topic + " this message" + str(payload))
             c.publish(topic, json.dumps(payload), 2)
+
+        # Create the package to send
+        if led_value == 0:
+            led_value = 1
+        else:
+            led_value = 0
 
         # Sleep for 15 seconds
         time.sleep(15)
