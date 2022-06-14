@@ -89,7 +89,7 @@ if __name__ == "__main__":
         #retrieve temperature values from arduino
         http = urllib3.PoolManager()
         msg = http.request("GET", "http://127.0.0.1:8080/arduino/temperature")
-        json_msg = json.loads(str(msg))
+        json_msg = json.loads(msg.data.decode('utf-8'))
         val = json_msg["e"][0]["v"]
         time.sleep(10)
         # format the data in senML and publish them
