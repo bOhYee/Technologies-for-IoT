@@ -53,7 +53,7 @@ def myOnMessageReceived(client, userdata, message):
         print("L:" + str(value))
 
 
-# retrieve information of the Catalog available subscriptions via REST
+# retrieve information of the Catalog available subscriptions via MQTT
 def recoverData():
     req = requests.get(RESOURCE_CATALOG_ADDRESS)
     # Raises an exception if it cannot reach the ResourceCatalog
@@ -76,8 +76,8 @@ if __name__ == '__main__':
     # 1. retrieve information of the Catalog
     topic_data = recoverData()
     print(topic_data)
+    
     # 2. register as a new device through MQTT communicating the topic for temperature measurements and for led command
-
     device = [{"ep": ["TempSensor", "LedSensor"], "res": ["temperature", "led"], "t": str(time.time())}]
     device_data["bn"] = str(uuid.uuid1())
     device_data["e"] = device
