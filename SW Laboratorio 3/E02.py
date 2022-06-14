@@ -94,32 +94,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-"""
-The exchanged data is in senML format.
-All following values have to be considered as examples, not actual values
-2. The service will register to the catalog using the following data format:
-    service_data = {
-        "bn": "ServiceGroup14",
-        "e": [{ "uuid": str(uuid.uuid1()), 
-                "ep": "TempService", 
-                "des": "I provide temperature data",
-                "t": str(time.time())}]
-    }
-3. The retrieved data about the Arduino Yun device will be in the following format:
-    device = {
-        "bn": "DeviceGroup14",
-        "e": [{ "uuid": "uniqueDeviceID", 
-                "ep": ["TempSensor", "LedSensor"],  
-                "res": ["temperature","led"],
-                "t": "timeValue"}]
-    }
-4. The temperature measurements retrieved from the MQTT endpoints will come in the following format:
-    temp_data = {
-        "bn": "YunGroup14",
-        "e": [{ "n": "temperature",
-                "t": 0,
-                "val": 0,
-                "u": "Celsius"
-    }
-"""
