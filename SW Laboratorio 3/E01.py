@@ -60,7 +60,7 @@ def recoverData():
     if req.status_code != 200:
         req.raise_for_status()
     subscription = req.json()
-    
+
     return subscription["MQTT"]["device"]["topic"]
 
 
@@ -86,19 +86,26 @@ if __name__ == '__main__':
     client.publish(topic_data, json.dumps(device_data), 2)
 
     while True:
-        # retrieve temperature values from arduino
-        http = urllib3.PoolManager()
-        msg = http.request("GET", "http://127.0.0.1:8080/arduino/temperature")
-        json_msg = json.loads(str(msg))
-        val = json_msg["e"][0]["v"]
-        time.sleep(10)
-        # format the data in senML and publish them
+        MESSAGE["e"].clear()
+
+        # Retrieve temperature values from arduino
+        msg = input()
+        msg = msg.split(":")
+
+        # Check if the value received is a float
+        try:
+            val = float(msg[1].strip())
+        except:
+            print("Cannot convert to float!")
+            continue
+
+        # Format the data in senML and publish them
         TEMP["t"] = time.time()
         TEMP["v"] = val
-        MESSAGE["e"] = [TEMP]
-        json_data = json.dumps(MESSAGE).encode('utf-8')
-        client.publish("tiot/group14", json_data)
-        # 3. renew each 1 minute the subscription
+        MESSAGE["e"].append(TIME)
+        client.publish("tiot/group14", json.dumps(MESSAGE).encode('utf-8'))
+
+        # Renew each 1 minute the subscription
         time.sleep(60)
         device_data["e"][0]["t"] = str(time.time())
         client.publish(topic_data, str(json.dumps(device_data)), 2)
