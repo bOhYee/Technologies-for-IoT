@@ -76,11 +76,16 @@ def main():
         req.raise_for_status()
 
     # Subscribe to the topic where temperature values are published
-    d# Filter the list of devices through removing the ones who do not have a LED
     devices = json.loads(req.text)
     for dev in devices:
-        if "temperature" not in dev["e"][0]["res"] :
-            devices.remove(dev)
+        if dev["bn"] == "DeviceGroup14":  # look for our Arduino device
+            res_list = dev["e"][0]["res"]
+            if "temperature" in res_list:
+                index_endpoint = res_list.index(
+                    "temperature")  # resources name and corresponding endpoints have the same index
+                client.subscribe(dev["e"][0]["ep"][index_endpoint])
+        else:
+            raise Exception("Device not available")
 
     time.sleep(60)
     client.loop_stop()
