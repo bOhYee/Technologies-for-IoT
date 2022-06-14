@@ -78,14 +78,9 @@ def main():
     # Subscribe to the topic where temperature values are published
     devices = json.loads(req.text)
     for dev in devices:
-        if dev["bn"] == "DeviceGroup14":  # look for our Arduino device
-            res_list = dev["e"][0]["res"]
-            if "temperature" in res_list:
-                index_endpoint = res_list.index(
-                    "temperature")  # resources name and corresponding endpoints have the same index
-                client.subscribe(dev["e"][0]["ep"][index_endpoint])
-        else:
-            raise Exception("Device not available")
+        if "temperature" in dev["e"][0]["res"]:
+            index_endpoint = res_list.index("temperature")  # resources name and corresponding endpoints have the same index
+            client.subscribe(dev["e"][0]["ep"][index_endpoint])
 
     time.sleep(60)
     client.loop_stop()
