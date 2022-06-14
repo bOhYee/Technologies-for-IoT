@@ -60,6 +60,7 @@ def recoverData():
     if req.status_code != 200:
         req.raise_for_status()
     subscription = req.json()
+    
     return subscription["MQTT"]["device"]["topic"]
 
 
@@ -76,7 +77,7 @@ if __name__ == '__main__':
     # 1. retrieve information of the Catalog
     topic_data = recoverData()
     print(topic_data)
-    
+
     # 2. register as a new device through MQTT communicating the topic for temperature measurements and for led command
     device = [{"ep": ["TempSensor", "LedSensor"], "res": ["temperature", "led"], "t": str(time.time())}]
     device_data["bn"] = str(uuid.uuid1())

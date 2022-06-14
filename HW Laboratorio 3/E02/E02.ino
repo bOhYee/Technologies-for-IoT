@@ -6,7 +6,7 @@
 const int TEMP_PIN = A1;
 const float B = 4275;
 const float R0 = 100000;
-const int WAIT_TIME = 2000;   
+const int WAIT_TIME = 2000;
 Process proc;
 
 float calculateTemperature(int v_read){
@@ -39,6 +39,7 @@ void loop(){
     float temp;
 
     temp = calculateTemperature(v_read);
+    proc.write("T:")
     proc.write(temp);
 
     while(proc.available() > 0){
