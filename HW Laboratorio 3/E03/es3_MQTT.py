@@ -90,8 +90,15 @@ if __name__ == "__main__":
 
         # Retrieve temperature values from arduino
         msg = input()
-        val = msg.split(":")
+        msg = msg.split(":")
 
+        # Check if the value received is a float
+        try:
+            val = float(msg[1].strip())
+        except:
+            print("Cannot convert to float!")
+            continue
+        
         # Format the data in senML and publish them
         TEMP["t"] = time.time()
         TEMP["v"] = val
