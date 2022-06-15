@@ -13,7 +13,7 @@ import uuid
 #
 # An element of "e", for the DEVICES, has to be structured like this:
 # {
-#   "ep"   : <type of communication>, (MQTT or REST)
+#   "ep"   : <endpoints available (list),
 #   "res"  : <list of strings indicating the resources available for that device>,
 #   "t"    : <time which the device has subscribed to the catalog or refreshed its subscription>
 # }
@@ -27,10 +27,14 @@ import uuid
 #
 # An element of "e", for the SERVICES, has to be structured like this:
 # {
-#   "des"  : <description of the service>, (MQTT or REST)
-#   "ep"   : <type of communication used by the service>,
+#   "des"  : <description of the service>,
+#   "ep"   : <endpoint of the service>,
 #   "t"    : <time which the service has subscribed to the catalog or refreshed its subscription>
 # }
+#
+# Regarding the communication through MQTT:
+# - Every device will publish its data using the topic "tiot/group14/"+uuid+"/"+endpoint
+# - Every device will subscribe for receiving data at "tiot/group14/command/"+uuid+"/"+endpoint
 #
 # Configuration constants
 RESOURCE_CATALOG_HOST = "127.0.0.1"
@@ -87,8 +91,7 @@ def check_body(resource, raw):
 
 
 def refresh(list_to_refresh):
-    # Only used for services and devices, so the attribute "t" exists
-
+    # Only used for services and devices, where the attribute "t" exists
     curr_time = time.time()
 
     for obj in list_to_refresh:
@@ -118,7 +121,7 @@ def on_msg_received(client_id, userdata, msg):
             found = True
             break
 
-    if (not found) and (check_body("device", device_received)):
+    if not found:
         devices.append(device_received)
 
     isReceived = True

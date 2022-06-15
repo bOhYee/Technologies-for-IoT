@@ -94,7 +94,7 @@ def main():
             index_endpoint = dev_body["res"].index("led")
             endpoint = dev["ep"][index_endpoint]
 
-            # Create the topic with the uuid
+            # Create the topic with the uuid and endpoint
             topic = BASE_TOPIC_PUB + str(name) + "/" + str(endpoint)
 
             payload["bn"] = name

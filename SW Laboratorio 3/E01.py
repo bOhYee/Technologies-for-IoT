@@ -4,13 +4,11 @@ import json
 import requests
 import paho.mqtt.client as mqtt
 
-# Client name
-import urllib3
-
-CLIENT_NAME = "Group_14"
-# Broker IP
-HOST_NAME = '127.0.0.1'
+# Configuration constants
 RESOURCE_CATALOG_ADDRESS = "http://127.0.0.1:8080/"
+MSG_BROKER_ADDRESS = "localhost"
+BASE_TOPIC_PUB = "tiot/group14/"
+BASE_TOPIC_SUB = "tiot/group14/command/"
 
 MESSAGE = {
     "bn": "YunGroup14",
@@ -64,26 +62,28 @@ def recoverData():
     return subscription["MQTT"]["device"]["topic"]
 
 
-if __name__ == '__main__':
-    client = mqtt.Client(CLIENT_NAME)
+def main():
+    uuid_cl = str(uuid.uuid1())
+
+    client = mqtt.Client(uuid_cl)
     client.on_connect = myOnConnect
     client.on_message = myOnMessageReceived
-    client.connect(HOST_NAME, 1883)
+    client.connect(MSG_BROKER_ADDRESS)
     client.loop_start()
-
-    # iscriversi al topic /tiot/group14/command per controllare uno dei LED della board
-    client.subscribe("tiot/group14/command")
 
     # 1. retrieve information of the Catalog
     topic_data = recoverData()
-    print(topic_data)
 
     # 2. register as a new device through MQTT communicating the topic for temperature measurements and for led command
     device = [{"ep": ["TempSensor", "LedSensor"], "res": ["temperature", "led"], "t": str(time.time())}]
-    device_data["bn"] = str(uuid.uuid1())
+    device_data["bn"] = uuid_cl
     device_data["e"] = device
-    print(str(json.dumps(device_data)))
     client.publish(topic_data, json.dumps(device_data), 2)
+
+    # iscriversi al topic /tiot/group14/command per controllare uno dei LED della board
+    for ep in device_data["e"][0]["ep"]:
+        topic = BASE_TOPIC_SUB + uuid_cl + "/" + ep
+        client.subscribe(topic, 2)
 
     while True:
         MESSAGE["e"].clear()
@@ -102,8 +102,8 @@ if __name__ == '__main__':
         # Format the data in senML and publish them
         TEMP["t"] = time.time()
         TEMP["v"] = val
-        MESSAGE["e"].append(TIME)
-        client.publish("tiot/group14", json.dumps(MESSAGE).encode('utf-8'))
+        MESSAGE["e"].append(TEMP)
+        client.publish(BASE_TOPIC_PUB + uuid_cl + "/" + device_data["e"][0]["ep"][device_data["e"][0]["res"].index("temperature")] , json.dumps(MESSAGE).encode('utf-8'))
 
         # Renew each 1 minute the subscription
         time.sleep(60)
@@ -114,3 +114,7 @@ if __name__ == '__main__':
     client.unsubscribe(topic_data)
     client.loop_stop()
     client.disconnect()
+
+
+if __name__ == '__main__':
+    main()

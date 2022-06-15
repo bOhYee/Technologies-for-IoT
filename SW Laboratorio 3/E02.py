@@ -4,11 +4,11 @@ import json
 import requests
 import paho.mqtt.client as mqtt
 
-# Client name
-CLIENT_NAME = "Group_14"
-# Broker IP
-HOST_NAME = '127.0.0.1'
+# Configuration constants
+MSG_BROKER_ADDRESS = "localhost"
 RESOURCE_CATALOG_ADDRESS = "http://127.0.0.1:8080/"
+BASE_TOPIC_PUB = "tiot/group14/"
+BASE_TOPIC_SUB = "tiot/group14/command/"
 
 temp_values = []
 service_data = {
@@ -46,10 +46,12 @@ def recover_data():
 
 
 def main():
-    client = mqtt.Client(CLIENT_NAME)
+    uuid_cl = str(uuid.uuid1())
+
+    client = mqtt.Client(uuid_cl)
     client.on_connect = myOnConnect
     client.on_message = myOnMessageReceived
-    client.connect(HOST_NAME, 1883)
+    client.connect(MSG_BROKER_ADDRESS)
     client.loop_start()
 
     # 1. retrieve information of the Catalog
@@ -57,7 +59,7 @@ def main():
 
     # 2. register as a new service through REST
     service = [{"ep": "TempService", "des": "I provide temperature data", "t": str(time.time())}]
-    service_data["bn"] = str(uuid.uuid1())
+    service_data["bn"] = uuid_cl
     service_data["e"] = service
 
     # Define the header of the request
@@ -79,8 +81,10 @@ def main():
     devices = json.loads(req.text)
     for dev in devices:
         if "temperature" in dev["e"][0]["res"]:
-            index_endpoint = res_list.index("temperature")  # resources name and corresponding endpoints have the same index
-            client.subscribe(dev["e"][0]["ep"][index_endpoint])
+            # Resources name and corresponding endpoints have the same index
+            index_endpoint = dev["e"][0]["res"].index("temperature")
+            topic = BASE_TOPIC_SUB + uuid_cl + "/" + dev["e"][0]["ep"][index_endpoint]
+            client.subscribe(topic, 2)
 
     time.sleep(60)
     client.loop_stop()
