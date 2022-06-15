@@ -53,13 +53,14 @@ def myOnMessageReceived(client, userdata, message):
         print("L:" + str(value))
 
 
-# retrieve information of the Catalog available subscriptions via REST
+# retrieve information of the Catalog available subscriptions via MQTT
 def recoverData():
     req = requests.get(RESOURCE_CATALOG_ADDRESS)
     # Raises an exception if it cannot reach the ResourceCatalog
     if req.status_code != 200:
         req.raise_for_status()
     subscription = req.json()
+
     return subscription["MQTT"]["device"]["topic"]
 
 
@@ -76,8 +77,8 @@ if __name__ == '__main__':
     # 1. retrieve information of the Catalog
     topic_data = recoverData()
     print(topic_data)
-    # 2. register as a new device through MQTT communicating the topic for temperature measurements and for led command
 
+    # 2. register as a new device through MQTT communicating the topic for temperature measurements and for led command
     device = [{"ep": ["TempSensor", "LedSensor"], "res": ["temperature", "led"], "t": str(time.time())}]
     device_data["bn"] = str(uuid.uuid1())
     device_data["e"] = device
@@ -85,19 +86,26 @@ if __name__ == '__main__':
     client.publish(topic_data, json.dumps(device_data), 2)
 
     while True:
-        # retrieve temperature values from arduino
-        http = urllib3.PoolManager()
-        msg = http.request("GET", "http://127.0.0.1:8080/arduino/temperature")
-        json_msg = json.loads(str(msg))
-        val = json_msg["e"][0]["v"]
-        time.sleep(10)
-        # format the data in senML and publish them
+        MESSAGE["e"].clear()
+
+        # Retrieve temperature values from arduino
+        msg = input()
+        msg = msg.split(":")
+
+        # Check if the value received is a float
+        try:
+            val = float(msg[1].strip())
+        except:
+            print("Cannot convert to float!")
+            continue
+
+        # Format the data in senML and publish them
         TEMP["t"] = time.time()
         TEMP["v"] = val
-        MESSAGE["e"] = [TEMP]
-        json_data = json.dumps(MESSAGE).encode('utf-8')
-        client.publish("tiot/group14", json_data)
-        # 3. renew each 1 minute the subscription
+        MESSAGE["e"].append(TIME)
+        client.publish("tiot/group14", json.dumps(MESSAGE).encode('utf-8'))
+
+        # Renew each 1 minute the subscription
         time.sleep(60)
         device_data["e"][0]["t"] = str(time.time())
         client.publish(topic_data, str(json.dumps(device_data)), 2)

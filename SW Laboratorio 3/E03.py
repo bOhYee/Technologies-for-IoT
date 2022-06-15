@@ -91,10 +91,11 @@ def main():
             # Recover the name and body of the device structure
             name = dev["bn"]
             dev_body = dev["e"][0]
-            endpoint = dev_body["ep"][dev_body["res"].index("led")]
+            index_endpoint = dev_body["res"].index("led")
+            endpoint = dev["ep"][index_endpoint]
 
             # Create the topic with the uuid
-            topic = BASE_TOPIC_PUB + str(name) + "/" + str()
+            topic = BASE_TOPIC_PUB + str(name) + "/" + str(endpoint)
 
             payload["bn"] = name
             payload["e"][0]["v"] = led_value

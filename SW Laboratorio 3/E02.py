@@ -78,14 +78,9 @@ def main():
     # Subscribe to the topic where temperature values are published
     devices = json.loads(req.text)
     for dev in devices:
-        if dev["bn"] == "DeviceGroup14":  # look for our Arduino device
-            res_list = dev["e"][0]["res"]
-            if "temperature" in res_list:
-                index_endpoint = res_list.index(
-                    "temperature")  # resources name and corresponding endpoints have the same index
-                client.subscribe(dev["e"][0]["ep"][index_endpoint])
-        else:
-            raise Exception("Device not available")
+        if "temperature" in dev["e"][0]["res"]:
+            index_endpoint = res_list.index("temperature")  # resources name and corresponding endpoints have the same index
+            client.subscribe(dev["e"][0]["ep"][index_endpoint])
 
     time.sleep(60)
     client.loop_stop()
@@ -94,32 +89,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-"""
-The exchanged data is in senML format.
-All following values have to be considered as examples, not actual values
-2. The service will register to the catalog using the following data format:
-    service_data = {
-        "bn": "ServiceGroup14",
-        "e": [{ "uuid": str(uuid.uuid1()), 
-                "ep": "TempService", 
-                "des": "I provide temperature data",
-                "t": str(time.time())}]
-    }
-3. The retrieved data about the Arduino Yun device will be in the following format:
-    device = {
-        "bn": "DeviceGroup14",
-        "e": [{ "uuid": "uniqueDeviceID", 
-                "ep": ["TempSensor", "LedSensor"],  
-                "res": ["temperature","led"],
-                "t": "timeValue"}]
-    }
-4. The temperature measurements retrieved from the MQTT endpoints will come in the following format:
-    temp_data = {
-        "bn": "YunGroup14",
-        "e": [{ "n": "temperature",
-                "t": 0,
-                "val": 0,
-                "u": "Celsius"
-    }
-"""
