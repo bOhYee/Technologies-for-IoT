@@ -36,7 +36,7 @@ def main():
         "bn" : uuid_cl,
         "e":[{
             "des": "Turn on/off LED",
-            "ep" : "MQTT",
+            "ep" : "LedService",
             "t" : str(time.time())
         }]
     }
@@ -91,9 +91,10 @@ def main():
             # Recover the name and body of the device structure
             name = dev["bn"]
             dev_body = dev["e"][0]
+            endpoint = dev_body["ep"][dev_body["res"].index("led")]
 
             # Create the topic with the uuid
-            topic = BASE_TOPIC_PUB + str(name)
+            topic = BASE_TOPIC_PUB + str(name) + "/" + str()
 
             payload["bn"] = name
             payload["e"][0]["v"] = led_value
