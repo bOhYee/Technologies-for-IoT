@@ -96,7 +96,7 @@ def main():
 
             payload["bn"] = name
             payload["e"][0]["v"] = led_value
-            print("Publishing " + str(payload) + " at " + endpoint)
+            # print("Publishing " + str(payload) + " at " + endpoint)
             c.publish(endpoint, json.dumps(payload), 2)
 
         # Create the package to send
