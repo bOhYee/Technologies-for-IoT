@@ -102,13 +102,13 @@ def main():
             TEMP["v"] = val
             MESSAGE["e"] = [TEMP]
             client.publish(temp_ep, json.dumps(MESSAGE).encode('utf-8'))
-            print("Published" + str(MESSAGE) + " at " + temp_ep)
+            # print("Published" + str(MESSAGE) + " at " + temp_ep)
 
         # Renew each 1 minute the subscription
         time.sleep(60)
         device_data["e"][0]["t"] = str(time.time())
         client.publish(topic_data, str(json.dumps(device_data)), 2)
-        print("Aggiornamento: " + str(json.dumps(device_data)))
+        # print("Aggiornamento: " + str(json.dumps(device_data)))
 
     client.unsubscribe(topic_data)
     client.loop_stop()
