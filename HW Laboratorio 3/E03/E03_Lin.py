@@ -103,7 +103,7 @@ if __name__ == "__main__":
             # Format the data in senML and publish 
             TEMP["t"] = time.time()
             TEMP["v"] = val
-            MESSAGE["e"]=TEMP
+            MESSAGE["e"]=[TEMP]
             yun.myPublish("tiot/group14", json.dumps(MESSAGE).encode('utf-8'))
 
 # string for led command
