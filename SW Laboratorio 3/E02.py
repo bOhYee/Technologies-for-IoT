@@ -81,12 +81,12 @@ def main():
             # Resources name and corresponding endpoints have the same index
             index_endpoint = dev["e"][0]["res"].index("temperature")
             topic = dev["e"][0]["ep"][index_endpoint]
-            print("Subscribing to " + topic)
+            # print("Subscribing to " + topic)
             client.subscribe(topic, 2)
 
     while True:
-        print(temp_values)
         time.sleep(60)
+        print(temp_values)
 
     client.loop_stop()
     client.disconnect()
