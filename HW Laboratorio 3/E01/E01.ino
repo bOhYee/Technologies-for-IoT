@@ -73,24 +73,19 @@ void sendFeedback(BridgeClient client, int status, float retVal, char type){
 
     //Positive response
     if(status == 200){
-        client.println("HTTP/1.1 200 OK");
-        client.println("Content-Type: application/json; charset=utf-8");
-        client.println("Server: Arduino");
-        client.println();
-        client.println(body);
-        client.println();
+        client.println("HTTP/1.1 200 OK ");
     }
     //Negative response
     else{
         client.print("HTTP/1.1 ");
         client.print(status);
-        client.print(" KO");
-        client.println("Content-Type: application/json; charset=utf-8");
-        client.println("Server: Arduino");
-        client.println();
-        client.println(body);
-        client.println();
+        client.print(" KO ");
     }
+    client.println("Content-Type: application/json; charset=utf-8 ");
+    client.println("Server: Arduino ");
+    client.println();
+    client.println(body);
+    client.println();
 }
 
 void processRequest(BridgeClient client){
