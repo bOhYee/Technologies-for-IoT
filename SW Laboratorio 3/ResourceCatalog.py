@@ -301,6 +301,7 @@ def main():
 
     # (CATALOG AS SUBSCRIBER) when a device publishes its info on this topic the catalog will retrieve them
     # (CATALOG AS PUBLISHER) for every device saved via MQTT a new specific topic will be generated
+    
     dev = PahoMQTT.Client(uuid_rc, True)
     dev.on_message = on_msg_received
     dev.on_connect = on_connect
@@ -322,7 +323,7 @@ def main():
                 # Publish the reception message
                 topic = SUBSCRIPTION["MQTT"]["device"]["topic"] + "/" + str(device_received["e"][0]["n"])
                 message = "Device " + (str(device_received["e"][0]["n"])) + " data correctly added or updated"
-                print(str(message))
+                # print(str(message))
                 dev.publish(topic, message, 2)
 
             received.clear()
