@@ -7,19 +7,21 @@ import uuid
 # This resource catalog will use only JSON packages that are structured in a certain way
 # The package must have a structure similar to the packages used in senML format
 # {
-#   "bn" : <UUID of the device>,
+#   "bn" : <name or prefix for user name>,
 #   "e"  : <list of feature of the device> (in this case we will suppose that e contains always one element
 # }
 #
 # An element of "e", for the DEVICES, has to be structured like this:
 # {
-#   "ep"   : <endpoints available (list),
+#   "n"    : <UUID of the device>
+#   "ep"   : <endpoints available (list)>,
 #   "res"  : <list of strings indicating the resources available for that device>,
 #   "t"    : <time which the device has subscribed to the catalog or refreshed its subscription>
 # }
 #
 # An element of "e", for the USERS, has to be structured like this:
 # {
+#   "n"        : <UUID of the user>
 #   "name"     : <name of the user>,
 #   "surname"  : <surname of the user>,
 #   "email"    : <mail of the user>
@@ -27,6 +29,7 @@ import uuid
 #
 # An element of "e", for the SERVICES, has to be structured like this:
 # {
+#   "n"    : <UUID of the service>
 #   "des"  : <description of the service>,
 #   "ep"   : <endpoint of the service>,
 #   "t"    : <time which the service has subscribed to the catalog or refreshed its subscription>
@@ -76,15 +79,15 @@ def check_body(resource, raw):
     raw_body = raw["e"][0]
     if resource == 'devices':
         for k in raw_body.keys():
-            if k not in ["ep", "res", "t"]:
+            if k not in ["n","ep", "res", "t"]:
                 return False
     elif resource == 'users':
         for k in raw_body.keys():
-            if k not in ["name", "surname", "email"]:
+            if k not in ["n","name", "surname", "email"]:
                 return False
     elif resource == 'services':
         for k in raw_body.keys():
-            if k not in ["des", "ep", "t"]:
+            if k not in ["n", "des", "ep", "t"]:
                 return False
 
     return True
@@ -108,14 +111,13 @@ def on_msg_received(client_id, userdata, msg):
     global devices
 
     device_received = json.loads(msg.payload.decode("utf-8"))
-
     # Check messages received
     if not check_body("devices", device_received):
         raise Exception("The message is not well structured.")
 
     found = False
     for dev in devices:
-        if dev["bn"] == device_received["bn"]:
+        if dev["e"][0]["n"] == device_received["e"][0]["n"]:
             # Update timestamp
             dev["e"][0]["t"] = device_received["e"][0]["t"]
             found = True
@@ -235,11 +237,11 @@ class ResourceCatalogREST:
         rawBody = json.loads(cherrypy.request.body.read())
         if check_body(uri[0], rawBody):
             found = False
-            id = rawBody["bn"]
+            id = rawBody["e"][0]["n"]
             if uri[0] == 'devices':
 
                 for d in devices:
-                    if d["bn"] == id:
+                    if d["e"][0]["n"] == id:
                         # Update timestamp
                         d["e"][0]["t"] = rawBody["e"][0]["t"]
                         found = True
@@ -251,7 +253,7 @@ class ResourceCatalogREST:
             if uri[0] == 'users':
 
                 for u in users:
-                    if u["bn"] == id:
+                    if u["e"][0]["n"] == id:
                         found = True
                         break
 
@@ -261,7 +263,7 @@ class ResourceCatalogREST:
             if uri[0] == 'services':
 
                 for s in services:
-                    if s["bn"] == id:
+                    if s["e"][0]["n"] == id:
                         # Update timestamp
                         s["e"][0]["t"] = rawBody["e"][0]["t"]
                         found = True
@@ -318,8 +320,9 @@ def main():
         if isReceived:
             for device_received in received:
                 # Publish the reception message
-                topic = SUBSCRIPTION["MQTT"]["device"]["topic"] + "/" + str(device_received["bn"])
-                message = "Device " + (str(device_received["e"][0]["uuid"])) + " data correctly added or updated"
+                topic = SUBSCRIPTION["MQTT"]["device"]["topic"] + "/" + str(device_received["e"][0]["n"])
+                message = "Device " + (str(device_received["e"][0]["n"])) + " data correctly added or updated"
+                print(str(message))
                 dev.publish(topic, message, 2)
 
             received.clear()
