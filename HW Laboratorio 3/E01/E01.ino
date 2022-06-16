@@ -31,42 +31,65 @@ float calculateTemperature(int v_read){
 String createBody(int status, float retVal, char type){
 
     String body;
-
-    body.concat("{\n");
-    body.concat("\"bn\" : \"Yun\",\n");
-    body.concat("\"e\" :");
-    body.concat("[\n{");
-    /*body += "\"n\": ";
-    if(type == 'L'){
-        body += "\"led\",\n"
+    if(status == 200){
+      body.concat("{");
+      body.concat("\"bn\" : \"Yun\",");
+      body.concat("\"e\" :");
+      body.concat("[{");
+      body += "\"n\": ";
+      if(type == 'L'){
+          body += "\"led\",";
+      }
+      else if(type == 'T'){
+          body += "\"temperature\",";
+      }
+      body += "\"t\" : " + String(millis()) + ",";
+      body += "\"v\" : " + String(retVal) + ",";
+      body += "\"u\" : ";
+      if(type == 'L'){
+          body += "\"null\"";
+      }
+      else if(type == 'T'){
+          body += "\"Cel\"";
+      }
+      body += "}]}";
     }
-    else if(type == 'T'){
-        body += "\"temperature\",\n"
+    else{
+      body.concat("{\"errorCode\": " + String(status) + ", ");
+      body.concat("\"errorText\": ");
+      if(status == 400){
+        body.concat("\"Bad request: the LED can only be turned on (1) or off (0).\"}");
+      }
+      else if(status == 404){
+        body.concat("\"Not found: the available services are /led/<1, 0>/ and /temperature/.\"}");
+      }
     }
-    body += "\"t\" : " + String(millis()) + ",\n";
-    body += "\"v\" : " + String(retVal) + ",\n";
-    body += "\"u\" : ";
-    if(type == 'L'){
-        body += "\"null\"\n";
-    }
-    else if(type == 'T'){
-        body += "\"Cel\"\n";
-    }
-    body += "}\n]\n}";*/
-
     return body;
 }
 
 void sendFeedback(BridgeClient client, int status, float retVal, char type){
 
-    String body;
+    String body = createBody(status, retVal, type);
 
-    client.println("Status: " + String(status));
+    //Positive response
     if(status == 200){
-        body = createBody(status, retVal, type);
-        client.println(F("Content-type: application/json; charset=utf-8"));
+        client.println("HTTP/1.1 200 OK");
+        client.println("Content-Type: application/json; charset=utf-8");
+        client.println("Server: Arduino");
         client.println();
         client.println(body);
+        client.println();
+    }
+    //Negative response
+    else{
+        client.print("HTTP/1.1 ");
+        client.print(status);
+        client.print(" KO");
+        client.println("Content-Type: application/json; charset=utf-8");
+        client.println("Server: Arduino");
+        client.println();
+        client.println(body);
+        client.println();
     }
 }
 
@@ -75,14 +98,15 @@ void processRequest(BridgeClient client){
     int led_val, v_read;
     float temp;
     String command;
-
-    command = client.readStringUntil('/');
+    
+    command = client.readString();
     command.trim();
     Serial.print("Command received: ");
     Serial.println(command);
-
-    if(command == "led"){
-        led_val = client.parseInt();
+    
+    if(command.indexOf("/led") > 0){
+        command = command.substring(command.indexOf("/led")+5, command.indexOf("/led")+6);
+        led_val = command.toInt();
 
         // Set LED status to HIGH or LOW
         if(led_val == 0 || led_val == 1){
@@ -94,9 +118,10 @@ void processRequest(BridgeClient client){
             sendFeedback(client, 400, -1, 'L');
         }
     }
-    else if(command == "temperature"){
+    else if(command.indexOf("/temperature") > 0){
         v_read = analogRead(TEMP_PIN);
         temp = calculateTemperature(v_read);
+        Serial.println(temp);
         sendFeedback(client, 200, temp, 'T');
     }
     else{
