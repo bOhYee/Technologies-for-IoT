@@ -93,17 +93,18 @@ if __name__ == "__main__":
         msg = msg.split(":")
 
         # Check if the value received is a float
-        try:
-            val = float(msg[1].strip())
-        except:
-            print("Cannot convert to float!")
-            continue
+        if msg[0] == 'T':
+            try:
+                val = float(msg[1].strip())
+            except:
+                print("Cannot convert to float!")
+                continue
         
-        # Format the data in senML and publish them
-        TEMP["t"] = time.time()
-        TEMP["v"] = val
-        MESSAGE["e"]=TEMP
-        yun.myPublish("tiot/group14", json.dumps(MESSAGE).encode('utf-8'))
+            # Format the data in senML and publish 
+            TEMP["t"] = time.time()
+            TEMP["v"] = val
+            MESSAGE["e"]=TEMP
+            yun.myPublish("tiot/group14", json.dumps(MESSAGE).encode('utf-8'))
 
 # string for led command
 # "{\"bn\": \"YunGroup14\",\"e\": [{\"n\": \"led\",\"t\": null,\"v\": 1,\"u\": null}]}"
