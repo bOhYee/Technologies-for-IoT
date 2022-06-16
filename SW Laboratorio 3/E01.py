@@ -37,7 +37,7 @@ def myOnMessageReceived(client, userdata, message):
     # A new message is received
     topic = message.topic.split('/')
     msg = json.loads(str(message.payload.decode("utf-8")))
-    if topic[-1] == 'command':
+    if topic[-1] == "LedSensor":
         if "e" not in msg or "bn" not in msg:
             return "Missing data!"
         if "n" not in msg["e"][0] or "t" not in msg["e"][0] or "v" not in msg["e"][0] or "u" not in msg["e"][0]:
@@ -75,35 +75,34 @@ def main():
     topic_data = recoverData()
 
     # 2. register as a new device through MQTT communicating the topic for temperature measurements and for led command
-    device = [{"ep": ["TempSensor", "LedSensor"], "res": ["temperature", "led"], "t": str(time.time())}]
-    device_data["bn"] = uuid_cl
+    temp_ep = BASE_TOPIC_PUB + uuid_cl + "/TempSensor"
+    led_ep = BASE_TOPIC_SUB + uuid_cl + "/LedSensor"
+    device = [{"n": uuid_cl, "ep": [temp_ep, led_ep], "res": ["temperature", "led"], "t": str(time.time())}]
     device_data["e"] = device
     client.publish(topic_data, json.dumps(device_data), 2)
 
-    # iscriversi al topic /tiot/group14/command per controllare uno dei LED della board
-    for ep in device_data["e"][0]["ep"]:
-        topic = BASE_TOPIC_SUB + uuid_cl + "/" + ep
-        client.subscribe(topic, 2)
+    # iscriversi al topic per controllare uno dei LED della board
+    client.subscribe(led_ep, 2)
 
     while True:
         MESSAGE["e"].clear()
-
         # Retrieve temperature values from arduino
         msg = input()
         msg = msg.split(":")
-
         # Check if the value received is a float
-        try:
-            val = float(msg[1].strip())
-        except:
-            print("Cannot convert to float!")
-            continue
+        if msg[0] == 'T':
+            try:
+                val = float(msg[1].strip())
+            except:
+                print("Cannot convert to float!")
+                continue
 
-        # Format the data in senML and publish them
-        TEMP["t"] = time.time()
-        TEMP["v"] = val
-        MESSAGE["e"].append(TEMP)
-        client.publish(BASE_TOPIC_PUB + uuid_cl + "/" + device_data["e"][0]["ep"][device_data["e"][0]["res"].index("temperature")] , json.dumps(MESSAGE).encode('utf-8'))
+            # Format the data in senML and publish them
+            TEMP["t"] = time.time()
+            TEMP["v"] = val
+            MESSAGE["e"] = [TEMP]
+            client.publish(temp_ep, json.dumps(MESSAGE).encode('utf-8'))
+            print("Published" + str(MESSAGE) + " at " + temp_ep)
 
         # Renew each 1 minute the subscription
         time.sleep(60)
