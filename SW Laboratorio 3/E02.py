@@ -7,12 +7,10 @@ import paho.mqtt.client as mqtt
 # Configuration constants
 MSG_BROKER_ADDRESS = "localhost"
 RESOURCE_CATALOG_ADDRESS = "http://127.0.0.1:8080/"
-BASE_TOPIC_PUB = "tiot/group14/"
-BASE_TOPIC_SUB = "tiot/group14/command/"
 
 temp_values = []
 service_data = {
-    "bn": "ServiceGroup14",
+    "bn": "TempServiceGroup14",
     "e": []
 }
 
@@ -31,7 +29,7 @@ def myOnMessageReceived(client, userdata, message):
         raise Exception("Missing data!")
     if msg["e"][0]["n"] != 'temperature':
         raise Exception("Wrong data!")
-    temp_values.append(msg["e"][0]["val"])
+    temp_values.append(msg["e"][0]["v"])
 
 
 # retrieve information of the Catalog available subscriptions via REST
@@ -58,8 +56,7 @@ def main():
     rest_url = recover_data()
 
     # 2. register as a new service through REST
-    service = [{"ep": "TempService", "des": "I provide temperature data", "t": str(time.time())}]
-    service_data["bn"] = uuid_cl
+    service = [{"n": uuid_cl, "ep": "TempService", "des": "I provide temperature data", "t": str(time.time())}]
     service_data["e"] = service
 
     # Define the header of the request
@@ -83,10 +80,14 @@ def main():
         if "temperature" in dev["e"][0]["res"]:
             # Resources name and corresponding endpoints have the same index
             index_endpoint = dev["e"][0]["res"].index("temperature")
-            topic = BASE_TOPIC_SUB + uuid_cl + "/" + dev["e"][0]["ep"][index_endpoint]
+            topic = dev["e"][0]["ep"][index_endpoint]
+            print("Subscribing to " + topic)
             client.subscribe(topic, 2)
 
-    time.sleep(60)
+    while True:
+        print(temp_values)
+        time.sleep(60)
+
     client.loop_stop()
     client.disconnect()
 
