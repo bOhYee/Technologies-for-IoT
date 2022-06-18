@@ -29,21 +29,20 @@ void setup(){
     Serial.println("Bridge connection established.");
 
     proc.begin("python3");
-    proc.addParameter("/root/lab_3.2.py");
+    proc.addParameter("/root/client.py");
     proc.runAsynchronously();
 }
 
 void loop(){
     int v_read = analogRead(TEMP_PIN);
-    char ret;
-    float temp;
+    float temp = calculateTemperature(v_read);
 
-    temp = calculateTemperature(v_read);
-    proc.write("T:")
-    proc.write(temp);
-
+    String msg = "T:" + String(temp);
+    Serial.println(msg);
+    proc.println(msg);
+    
     while(proc.available() > 0){
-        ret = proc.read();
+        char ret = proc.read();
         Serial.print(ret);
     }
 
