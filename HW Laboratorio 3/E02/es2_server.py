@@ -25,8 +25,8 @@ if __name__ == '__main__':
     }
 
     cherrypy.tree.mount(TemperatureWebService(), '/log', conf)
-    cherrypy.config.update({'server.socket_host': '127.0.0.1'})
-    cherrypy.config.update({'server.socket_port': 8080})
+    cherrypy.config.update({'server.socket_host': '192.168.1.192'}) #Insert the server machine's local IP
+    cherrypy.config.update({'server.socket_port': 8989})
 
     cherrypy.engine.start()
     cherrypy.engine.block()
