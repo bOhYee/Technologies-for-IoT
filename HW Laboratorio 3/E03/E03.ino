@@ -2,6 +2,9 @@
 #include<Process.h>
 #include <math.h>
 
+// LED variables
+const int LED_PIN = 10;
+
 // Temperature sensor variables
 const int TEMP_PIN = A1;
 const float B = 4275;
@@ -20,6 +23,23 @@ float calculateTemperature(int v_read){
     return temperature;
 }
 
+void processCommand(String command){
+  command.trim();
+  if (command.startsWith("L:")== true)
+    {
+      if (command.endsWith("1")== true)
+        analogWrite(LED_PIN,HIGH);
+      if (command.endsWith("0")== true)
+        analogWrite(LED_PIN,LOW);
+      Serial.println(command);
+      }
+   else {
+    Serial.print("Error: ");
+    Serial.println(command);
+    }
+  
+}
+
 void setup(){
     Serial.begin(9600);
     while(!Serial);
@@ -27,9 +47,12 @@ void setup(){
     Serial.println("Initializing Bridge connection...");
     Bridge.begin();
     Serial.println("Bridge connection established.");
-
+    
+    pinMode(LED_PIN,OUTPUT);
+    analogWrite(LED_PIN,LOW);
+    
     proc.begin("python3");
-    proc.addParameter("/root/lab_3.3.py");
+    proc.addParameter("/root/E03_Lin.py");
     proc.runAsynchronously();
 }
 
@@ -37,14 +60,18 @@ void loop(){
     int v_read = analogRead(TEMP_PIN);
     char ret;
     float temp;
+    String cmd;
 
     temp = calculateTemperature(v_read);
-    proc.write("T:")
+    proc.write("T:");
     proc.write(temp);
 
     while(proc.available() > 0){
         ret = proc.read();
-        Serial.print(ret);
+        cmd+=ret;
+        processCommand(cmd);
+        delay(50);
+        cmd[0]='\0';
     }
 
     delay(WAIT_TIME);
