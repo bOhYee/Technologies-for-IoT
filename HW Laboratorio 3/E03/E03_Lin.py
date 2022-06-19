@@ -4,6 +4,7 @@ import json
 import random
 
 import urllib3
+import uuid
 
 MESSAGE = {
     "bn": "YunGroup14",
@@ -12,7 +13,7 @@ MESSAGE = {
 TEMP = {
     "n": "temperature",
     "t": 0,
-    "val": 0,
+    "v": 0,
     "u": "Celsius"
 }
 
@@ -66,24 +67,25 @@ class MyMQTT:
         topic = message.topic.split('/')
         msg1 = str(message.payload.decode("utf-8"))
         msg = json.loads(msg1)
-        if topic[-1] == 'command':
+        if topic[-1] == "command":
             if "e" not in msg or "bn" not in msg:
-                print("Missing data!")
+                print("E:3")
             elif "n" not in msg["e"][0] or "t" not in msg["e"][0] or "v" not in msg["e"][0] or "u" not in msg["e"][0]:
-                print( "Missing data!")
+                print("E:3")
             elif msg["e"][0]["n"] != 'led':
-                print("Invalid name.")
+                print("E:4")
             elif msg["e"][0]["v"] not in [0, 1]:
-                print( "Invalid led command.")
-            else
+                print("E:5")
+            else:
+                peripheral = msg["e"][0]["n"]
                 value = msg["e"][0]["v"]
                 print("L:" + str(value))
 
 
 if __name__ == "__main__":
-    yun = MyMQTT("Yun_Group14")
+    yun = MyMQTT(str(uuid.uuid1()))
     yun.start()
-    yun.mySubscribe("tiot/group14/command")
+    yun.mySubscribe("/tiot/group14/command")
 
     while True:
         MESSAGE["e"].clear()
@@ -97,14 +99,16 @@ if __name__ == "__main__":
             try:
                 val = float(msg[1].strip())
             except:
-                print("Cannot convert to float!")
+                print("E:1")
                 continue
         
-            # Format the data in senML and publish 
+            # Format the data in SenML and publish 
             TEMP["t"] = time.time()
             TEMP["v"] = val
             MESSAGE["e"]=[TEMP]
-            yun.myPublish("tiot/group14", json.dumps(MESSAGE).encode('utf-8'))
-
+            yun.myPublish("/tiot/group14/", json.dumps(MESSAGE).encode("utf-8"))
+        else:
+            print("E:2")
+    yun.stop()
 # string for led command
-# "{\"bn\": \"YunGroup14\",\"e\": [{\"n\": \"led\",\"t\": null,\"v\": 1,\"u\": null}]}"
+# '{\"bn\": \"YunGroup14\",\"e\": [{\"n\": \"led\",\"t\": null,\"v\": 1,\"u\": null}]}'
