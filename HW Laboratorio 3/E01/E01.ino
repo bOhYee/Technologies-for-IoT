@@ -132,6 +132,9 @@ void setup(){
     Serial.println("Initializing Bridge connection...");
     Bridge.begin();
     Serial.println("Bridge connection established.");
+    
+    pinMode(LED_PIN,OUTPUT);
+    analogWrite(LED_PIN,LOW);
 
     server.noListenOnLocalhost();
     server.begin();
