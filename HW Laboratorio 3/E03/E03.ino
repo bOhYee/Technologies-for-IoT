@@ -29,7 +29,7 @@ void setup(){
     Serial.println("Bridge connection established.");
 
     proc.begin("python3");
-    proc.addParameter("/root/lab_3.2.py");
+    proc.addParameter("/root/lab_3.3.py");
     proc.runAsynchronously();
 }
 
