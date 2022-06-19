@@ -68,15 +68,16 @@ class MyMQTT:
         msg = json.loads(msg1)
         if topic[-1] == 'command':
             if "e" not in msg or "bn" not in msg:
-                return "Missing data!"
-            if "n" not in msg["e"][0] or "t" not in msg["e"][0] or "v" not in msg["e"][0] or "u" not in msg["e"][0]:
-                return "Missing data!"
-            if msg["e"][0]["n"] != 'led':
-                return "Invalid name."
-            if msg["e"][0]["v"] not in [0, 1]:
-                return "Invalid led command."
-            value = msg["e"][0]["v"]
-            print("L:" + str(value))
+                print("Missing data!")
+            elif "n" not in msg["e"][0] or "t" not in msg["e"][0] or "v" not in msg["e"][0] or "u" not in msg["e"][0]:
+                print( "Missing data!")
+            elif msg["e"][0]["n"] != 'led':
+                print("Invalid name.")
+            elif msg["e"][0]["v"] not in [0, 1]:
+                print( "Invalid led command.")
+            else
+                value = msg["e"][0]["v"]
+                print("L:" + str(value))
 
 
 if __name__ == "__main__":
