@@ -75,7 +75,6 @@ class MyMQTT:
                 return "Invalid name."
             if msg["e"][0]["v"] not in [0, 1]:
                 return "Invalid led command."
-            peripheral = msg["e"][0]["n"]
             value = msg["e"][0]["v"]
             print("L:" + str(value))
 
