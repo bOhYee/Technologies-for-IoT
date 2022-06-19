@@ -63,8 +63,8 @@ void loop(){
     String cmd;
 
     temp = calculateTemperature(v_read);
-    proc.write("T:");
-    proc.write(temp);
+    String msg = "T:" + String(temp);
+    proc.println(msg);
 
     while(proc.available() > 0){
         ret = proc.read();
