@@ -59,6 +59,7 @@ void processCommand(){
 }
 
 void setup(){
+    pinMode(LED_PIN,OUTPUT); //set the LED pin as output
     Serial.begin(9600);
     while(!Serial);
 
